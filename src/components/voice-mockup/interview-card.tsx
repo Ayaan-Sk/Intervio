@@ -26,7 +26,6 @@ export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: 
   const isRecordingRef = useRef(false);
 
   const startRecording = useCallback(() => {
-    // Use the ref to prevent starting an already-running recognition
     if (recognitionRef.current && !isRecordingRef.current) {
       setTranscript('');
       try {
@@ -35,9 +34,8 @@ export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: 
         console.warn('Speech recognition could not be started, may already be active.', e);
       }
     }
-  }, []); // Empty dependency array makes this function stable
+  }, []);
 
-  // Effect to initialize SpeechRecognition on mount
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -95,79 +93,92 @@ export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: 
     };
   }, [toast]);
 
-  // Effect to handle Text-to-Speech when the question changes
   useEffect(() => {
     if (!question || !('speechSynthesis' in window)) {
       return;
     }
+    
+    let isCleanedUp = false;
 
-    // Stop any previous actions before starting new ones.
-    window.speechSynthesis.cancel();
-    if (recognitionRef.current && isRecordingRef.current) {
-      recognitionRef.current.stop();
-    }
-
-    // Reset state for the new question.
-    setTranscript('');
-    setIsRecording(false);
-    isRecordingRef.current = false;
-    setIsSpeaking(true);
-
-    const utterance = new SpeechSynthesisUtterance(question);
-
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      // A short delay can help ensure the audio channel is released before recording starts.
-      setTimeout(() => startRecording(), 100);
-    };
-
-    utterance.onerror = (event) => {
-      // The 'interrupted' error is expected when the component unmounts or the question changes.
-      // We can safely ignore it to avoid showing an unnecessary error toast.
-      if (event.error === 'interrupted') {
-        console.log('Speech synthesis interrupted, this is expected on question change.');
-        return;
+    const speakAndThenRecord = async () => {
+      window.speechSynthesis.cancel();
+      if (recognitionRef.current && isRecordingRef.current) {
+        recognitionRef.current.stop();
+      }
+      
+      setTranscript('');
+      setIsRecording(false);
+      isRecordingRef.current = false;
+      
+      if (!isCleanedUp) {
+        setIsSpeaking(true);
       }
 
-      setIsSpeaking(false);
-      console.error('SpeechSynthesis Error:', event.error);
-      toast({
-        variant: 'destructive',
-        title: 'Text-to-Speech Error',
-        description: 'Could not play audio. Starting recording directly.',
-      });
-      // Fallback to recording if speech fails for other reasons.
-      startRecording();
-    };
+      const utterance = new SpeechSynthesisUtterance(question);
 
-    const setVoiceAndSpeak = () => {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
+      const getVoices = () => new Promise<SpeechSynthesisVoice[]>(resolve => {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length) {
+          resolve(voices);
+          return;
+        }
+        window.speechSynthesis.onvoiceschanged = () => resolve(window.speechSynthesis.getVoices());
+      });
+
+      try {
+        const voices = await getVoices();
+        if (isCleanedUp) return;
+
         let selectedVoice = voices.find(v =>
           v.lang.startsWith('en') &&
-          (voice === 'male' ? /male/i.test(v.name) : /female/i.test(v.name))
+          (voice === 'male' ? /male/i.test(v.name) && !/female/i.test(v.name) : /female/i.test(v.name))
         );
         if (!selectedVoice) {
-          selectedVoice = voices.find(v => v.lang.startsWith('en'));
+            selectedVoice = voices.find(v => v.lang.startsWith('en'));
         }
         if (selectedVoice) {
           utterance.voice = selectedVoice;
         }
+
+        utterance.onend = () => {
+          if (!isCleanedUp) {
+            setIsSpeaking(false);
+            setTimeout(() => {
+              if (!isCleanedUp) startRecording();
+            }, 100);
+          }
+        };
+
+        utterance.onerror = (event) => {
+          if (isCleanedUp || event.error === 'interrupted') return;
+          
+          setIsSpeaking(false);
+          console.error('SpeechSynthesis Error:', event.error);
+          toast({
+            variant: 'destructive',
+            title: 'Text-to-Speech Error',
+            description: 'Could not play audio. Starting recording directly.',
+          });
+          startRecording();
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } catch (error) {
+        if (isCleanedUp) return;
+        console.error("Failed to get voices for TTS", error);
+        setIsSpeaking(false);
+        startRecording();
       }
-      window.speechSynthesis.speak(utterance);
     };
 
-    // The voices list might load asynchronously.
-    if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
-    } else {
-      setVoiceAndSpeak();
-    }
+    speakAndThenRecord();
 
-    // The cleanup function is crucial to stop speech when the component unmounts
-    // or when this effect re-runs for a new question.
     return () => {
+      isCleanedUp = true;
       window.speechSynthesis.cancel();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
     };
   }, [question, voice, startRecording, toast]);
 
