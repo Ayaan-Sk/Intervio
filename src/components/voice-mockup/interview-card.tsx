@@ -5,31 +5,38 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Mic, Speaker } from 'lucide-react';
+import { Loader2, Mic, Speaker, Volume2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { textToSpeech } from '@/app/actions';
+import type { InterviewVoice } from './voice-mockup-app';
 
 interface InterviewCardProps {
   question: string;
   onAnswerSubmit: (answer: string) => void;
   isAnalyzing: boolean;
+  voice: InterviewVoice;
 }
 
-export function InterviewCard({ question, onAnswerSubmit, isAnalyzing }: InterviewCardProps) {
+export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, voice }: InterviewCardProps) {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [isReadingQuestion, setIsReadingQuestion] = useState(false);
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const startRecording = useCallback(() => {
     if (recognitionRef.current && !isRecording) {
       setTranscript('');
       try {
         recognitionRef.current.start();
+        setIsRecording(true);
       } catch (e) {
-        // This error can happen if recognition is already started.
         console.warn('Speech recognition could not be started, may already be active.', e);
+        if (!isRecording) setIsRecording(true);
       }
-      setIsRecording(true);
     }
   }, [isRecording]);
 
@@ -74,28 +81,65 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing }: Intervi
 
     recognitionRef.current = recognition;
 
-    // Cleanup on unmount
     return () => {
       recognitionRef.current?.stop();
     }
   }, [toast]);
   
-
   useEffect(() => {
-    if (question) {
-      setTranscript('');
-      // To prevent API rate limit errors, the text-to-speech functionality
-      // has been temporarily disabled. Recording starts automatically.
-      startRecording();
-    }
+    if (!question || !voice) return;
+
+    setTranscript('');
+    setIsRecording(false);
+    setAudioSrc(null);
+    recognitionRef.current?.stop();
+
+    const getAudio = async () => {
+      setIsReadingQuestion(true);
+      try {
+        const response = await textToSpeech({ text: question, voice });
+        if (response.audioDataUri) {
+          setAudioSrc(response.audioDataUri);
+        } else {
+          throw new Error('No audio data URI in response');
+        }
+      } catch (error) {
+        console.error("Failed to get TTS audio", error);
+        toast({
+          variant: 'destructive',
+          title: 'Text-to-Speech Failed',
+          description: 'Could not play audio. Starting recording.',
+        });
+        startRecording();
+      } finally {
+        setIsReadingQuestion(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      getAudio();
+    }, 500);
 
     return () => {
-        if(recognitionRef.current){
-            recognitionRef.current.stop();
-        }
-    }
-  }, [question, startRecording]);
+      clearTimeout(timer);
+      audioRef.current?.pause();
+      recognitionRef.current?.stop();
+    };
+  }, [question, voice, toast, startRecording]);
 
+  useEffect(() => {
+      if (audioSrc && audioRef.current) {
+        audioRef.current.play().catch(e => {
+            console.error("Audio playback failed", e);
+             toast({
+                variant: 'destructive',
+                title: 'Audio Playback Blocked',
+                description: 'Please interact with the page to enable audio. Starting recording.',
+             });
+            startRecording();
+        });
+      }
+  }, [audioSrc, startRecording, toast]);
 
   const handleSubmit = () => {
     if (transcript.trim()) {
@@ -105,24 +149,46 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing }: Intervi
   };
 
   const getStatusMessage = () => {
+    if (isReadingQuestion) {
+      return (
+        <div className="flex items-center gap-2 text-primary">
+          <Loader2 className="animate-spin" />
+          <span>Generating question audio...</span>
+        </div>
+      );
+    }
+    if (audioSrc && !isRecording && !audioRef.current?.ended) {
+      return (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Volume2 />
+          <span>Listen to the question. Recording will start after.</span>
+        </div>
+      );
+    }
     if (isRecording) {
       return (
         <div className="flex items-center gap-2 text-red-500">
           <Mic />
           <span>Recording... Speak now.</span>
         </div>
-      )
+      );
     }
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
         <Speaker />
-        <span>Prepare to answer. Recording starts automatically.</span>
+        <span>Prepare to answer.</span>
       </div>
     );
   };
 
   return (
     <div className="space-y-6 w-full max-w-2xl animate-fade-in">
+      <audio 
+        ref={audioRef} 
+        src={audioSrc || undefined} 
+        onEnded={startRecording}
+        hidden
+      />
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-2xl">{question}</CardTitle>

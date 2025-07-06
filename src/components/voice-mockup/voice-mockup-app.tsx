@@ -120,6 +120,7 @@ export function VoiceMockupApp() {
             question={questions[currentQuestionIndex]}
             onAnswerSubmit={handleAnswerSubmit}
             isAnalyzing={isAnalyzing}
+            voice={voice}
           />
         );
 
