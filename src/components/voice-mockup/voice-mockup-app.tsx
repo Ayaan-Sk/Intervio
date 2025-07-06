@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { generateInterviewQuestions, analyzeAnswerQuality } from '@/app/actions';
+import { analyzeAnswerQuality } from '@/app/actions';
 import { TopicForm } from './topic-form';
 import { InterviewCard } from './interview-card';
 import { FeedbackCard } from './feedback-card';
@@ -22,6 +22,26 @@ interface AnalysisResult {
 type Step = 'topic' | 'interview' | 'feedback' | 'summary';
 export type InterviewVoice = 'Algenib' | 'Electra';
 
+const DUMMY_QUESTIONS: Record<string, string[]> = {
+  'react': [
+    'What is the difference between `useState` and `useRef` in React?',
+    'Explain the purpose of the `useEffect` hook. Provide an example of how you would use it to fetch data.',
+  ],
+  'docker': [
+    'What is a Docker container, and how does it differ from a virtual machine?',
+    'Explain the purpose of a Dockerfile. What are some common instructions you would use in one?',
+  ],
+  'kubernetes': [
+    'What is a Pod in Kubernetes?',
+    'Describe the difference between a Deployment and a StatefulSet in Kubernetes.',
+  ],
+  'default': [
+    'Tell me about a challenging technical problem you solved recently.',
+    'How do you approach learning a new technology or programming language?',
+    'Describe your experience with version control systems like Git.',
+  ]
+};
+
 export function VoiceMockupApp() {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>('topic');
@@ -33,31 +53,23 @@ export function VoiceMockupApp() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleTopicSubmit = async (submittedTopic: string, selectedVoice: InterviewVoice) => {
+  const handleTopicSubmit = (submittedTopic: string, selectedVoice: InterviewVoice) => {
     setIsGenerating(true);
     setTopic(submittedTopic);
     setVoice(selectedVoice);
-    try {
-      const { questions: generatedQuestions } = await generateInterviewQuestions({ technicalTopic: submittedTopic });
-      if (generatedQuestions && generatedQuestions.length > 0) {
-        setQuestions(generatedQuestions);
-        setStep('interview');
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Failed to generate questions',
-          description: 'Could not generate questions for this topic. Please try another one.',
-        });
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'An unexpected error occurred while generating questions.',
-      });
-    } finally {
-      setIsGenerating(false);
-    }
+
+    const topicKey = Object.keys(DUMMY_QUESTIONS).find(key => 
+      submittedTopic.toLowerCase().includes(key) && key !== 'default'
+    );
+    
+    const questionPool = topicKey ? DUMMY_QUESTIONS[topicKey] : DUMMY_QUESTIONS['default'];
+    const selectedQuestion = questionPool[Math.floor(Math.random() * questionPool.length)];
+
+    setQuestions([selectedQuestion]); // Using an array with one question for now
+    setStep('interview');
+    
+    // Using a timeout to make the UI transition feel smoother
+    setTimeout(() => setIsGenerating(false), 300);
   };
 
   const handleAnswerSubmit = async (answer: string) => {

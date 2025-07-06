@@ -2,11 +2,6 @@
 'use server';
 
 import {
-  generateInterviewQuestions as generateQuestions,
-  GenerateInterviewQuestionsInput,
-  GenerateInterviewQuestionsOutput,
-} from '@/ai/flows/generate-interview-questions';
-import {
   analyzeAnswerQuality as analyzeQuality,
   AnalyzeAnswerQualityInput,
   AnalyzeAnswerQualityOutput,
@@ -18,10 +13,6 @@ import {
 } from '@/ai/flows/text-to-speech';
 import { z } from 'zod';
 
-const topicSchema = z.object({
-  technicalTopic: z.string().min(2).max(100),
-});
-
 const answerSchema = z.object({
   question: z.string(),
   answer: z.string(),
@@ -31,26 +22,6 @@ const ttsSchema = z.object({
   text: z.string(),
   voice: z.enum(['Algenib', 'Electra']),
 });
-
-export async function generateInterviewQuestions(
-  input: GenerateInterviewQuestionsInput
-): Promise<GenerateInterviewQuestionsOutput> {
-  const parsedInput = topicSchema.safeParse(input);
-  if (!parsedInput.success) {
-    throw new Error('Invalid input for generating questions.');
-  }
-
-  try {
-    const result = await generateQuestions(parsedInput.data);
-    if (!result || !result.questions || result.questions.length === 0) {
-      return { questions: ['Could not generate questions for this topic. Please try another one.'] };
-    }
-    return result;
-  } catch (error) {
-    console.error('Error generating interview questions:', error);
-    return { questions: ['An unexpected error occurred. Please try again later.'] };
-  }
-}
 
 export async function analyzeAnswerQuality(
   input: AnalyzeAnswerQualityInput
