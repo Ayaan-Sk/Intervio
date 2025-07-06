@@ -77,7 +77,7 @@ export function VoiceMockupApp() {
           toast({
             variant: 'destructive',
             title: 'Text-to-Speech Error',
-            description: 'Could not generate audio. The interview will proceed without it.',
+            description: error,
           });
         } else if (audioDataUri) {
           audioCache.set(questionText, audioDataUri);

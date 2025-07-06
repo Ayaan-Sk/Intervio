@@ -52,6 +52,9 @@ export async function textToSpeech(
   } catch (error) {
     console.error('Error in text to speech:', error);
     if (error instanceof Error) {
+        if (error.message.includes('429')) {
+          return { error: 'API rate limit exceeded. Please try again later or check your billing plan.' };
+        }
         return { error: error.message };
     }
     return { error: 'Failed to generate audio due to an unknown error.' };
