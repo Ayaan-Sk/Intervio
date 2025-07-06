@@ -29,7 +29,7 @@ const prompt = ai.definePrompt({
   name: 'generateInterviewQuestionsPrompt',
   input: {schema: GenerateInterviewQuestionsInputSchema},
   output: {schema: GenerateInterviewQuestionsOutputSchema},
-  prompt: `You are an expert interviewer specializing in technical roles. Generate a list of interview questions for the following technical topic:
+  prompt: `You are an expert interviewer specializing in technical roles. Generate a list of exactly 3 interview questions for the following technical topic:
 
 Technical Topic: {{{technicalTopic}}}
 
