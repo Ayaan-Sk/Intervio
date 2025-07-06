@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -23,8 +24,56 @@ export type InterviewVoice = 'male' | 'female';
 
 const DUMMY_QUESTIONS: Record<string, string[]> = {
   'react': [
-    'What is the difference between `useState` and `useRef` in React?',
-    'Explain the purpose of the `useEffect` hook. Provide an example of how you would use it to fetch data.',
+    'What is React and why is it used?',
+    'What are components in React?',
+    'What is the difference between props and state?',
+    'What is JSX?',
+    'What are functional and class components?',
+    'How does the Virtual DOM work in React?',
+    'What is the purpose of keys in a list?',
+    'What is a controlled component in React?',
+    'How does React handle form inputs?',
+    'What are React hooks?',
+    'What does the useState hook do?',
+    'What is the useEffect hook used for?',
+    'What is prop drilling and how can it be avoided?',
+    'What are fragments in React?',
+    'How do you conditionally render components in React?',
+    'What is the purpose of useRef?',
+    'How do you handle side effects in React?',
+    'What is the Context API and when would you use it?',
+    'What are custom hooks and why are they useful?',
+    'What is the difference between useMemo and useCallback?',
+    'What is reconciliation in React?',
+    'What are Higher Order Components (HOCs)?',
+    'What is lazy loading in React and how is it implemented?',
+    'What is code splitting?',
+    'How does React optimize performance during re-renders?',
+    'What are pure components?',
+    'How does React differ from other frameworks like Angular or Vue?',
+    'What is React Router and how does it work?',
+    'How do you pass parameters in React Router?',
+    'What are the differences between useEffect and componentDidMount?',
+    'What is Redux and why is it used with React?',
+    'What are actions, reducers, and the store in Redux?',
+    'What is the difference between Redux and Context API?',
+    'What are middleware in Redux?',
+    'What is the useReducer hook?',
+    'How do you deploy a React application?',
+    'What is Create React App (CRA)?',
+    'What is the difference between CRA and Vite?',
+    'How can you improve performance in a large React application?',
+    'What is tree shaking?',
+    'How do you secure a React app?',
+    'What are common React anti-patterns to avoid?',
+    'How can you handle errors in React components?',
+    'What is the purpose of error boundaries?',
+    'What is Server-Side Rendering (SSR) in React?',
+    'What is hydration in React?',
+    'How does React handle accessibility (a11y)?',
+    'How can you test a React component?',
+    'What is snapshot testing?',
+    'What are best practices for structuring a scalable React project?',
   ],
   'docker': [
     'What is a Docker container, and how does it differ from a virtual machine?',
@@ -59,10 +108,11 @@ export function VoiceMockupApp() {
 
     const questionPool = DUMMY_QUESTIONS[submittedTopic] || DUMMY_QUESTIONS['general'];
     
-    // Using an array with one question to simulate a shorter interview and avoid API rate limits on analysis.
-    const selectedQuestion = questionPool[Math.floor(Math.random() * questionPool.length)];
+    // Select 3 random questions from the pool without repetition
+    const shuffled = [...questionPool].sort(() => 0.5 - Math.random());
+    const selectedQuestions = shuffled.slice(0, 3);
 
-    setQuestions([selectedQuestion]);
+    setQuestions(selectedQuestions);
     setStep('interview');
     
     // Using a timeout to make the UI transition feel smoother
@@ -142,7 +192,7 @@ export function VoiceMockupApp() {
 
   return (
     <div className="container mx-auto py-8 px-4 flex flex-col items-center gap-8">
-      {(step === 'interview' || step === 'feedback') && (
+      {(step === 'interview' || step === 'feedback') && questions.length > 0 && (
         <div className="w-full max-w-2xl">
           <p className="text-sm text-center text-muted-foreground mb-2">Question {currentQuestionIndex + 1} of {questions.length}</p>
           <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} />
