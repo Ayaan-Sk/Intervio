@@ -5,36 +5,44 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Mic, Speaker, Volume2 } from 'lucide-react';
+import { Loader2, Mic, Speaker, Volume2, Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { InterviewVoice } from './voice-mockup-app';
 
 interface InterviewCardProps {
   question: string;
-  voice: InterviewVoice;
+  audioDataUri: string | null;
   onAnswerSubmit: (answer: string) => void;
   isAnalyzing: boolean;
+  isFetchingAudio: boolean;
 }
 
-export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: InterviewCardProps) {
+export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyzing, isFetchingAudio }: InterviewCardProps) {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const isRecordingRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const startRecording = useCallback(() => {
-    if (recognitionRef.current && !isRecordingRef.current) {
+    if (recognitionRef.current && !isRecording) {
       setTranscript('');
       try {
         recognitionRef.current.start();
+        setIsRecording(true);
       } catch (e) {
         console.warn('Speech recognition could not be started, may already be active.', e);
       }
     }
-  }, []);
+  }, [isRecording]);
+
+  const stopRecording = useCallback(() => {
+    if (recognitionRef.current && isRecording) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    }
+  }, [isRecording]);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -71,17 +79,10 @@ export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: 
         description: `Error: ${event.error}. Please ensure microphone access is allowed.`,
       });
       setIsRecording(false);
-      isRecordingRef.current = false;
-    };
-
-    recognition.onstart = () => {
-      setIsRecording(true);
-      isRecordingRef.current = true;
     };
     
     recognition.onend = () => {
       setIsRecording(false);
-      isRecordingRef.current = false;
     };
 
     recognitionRef.current = recognition;
@@ -94,104 +95,50 @@ export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: 
   }, [toast]);
 
   useEffect(() => {
-    if (!question || !('speechSynthesis' in window)) {
-      return;
-    }
-    
-    let isCleanedUp = false;
-
-    const speakAndThenRecord = async () => {
-      window.speechSynthesis.cancel();
-      if (recognitionRef.current && isRecordingRef.current) {
-        recognitionRef.current.stop();
-      }
-      
-      setTranscript('');
-      setIsRecording(false);
-      isRecordingRef.current = false;
-      
-      if (!isCleanedUp) {
-        setIsSpeaking(true);
-      }
-
-      const utterance = new SpeechSynthesisUtterance(question);
-
-      const getVoices = () => new Promise<SpeechSynthesisVoice[]>(resolve => {
-        const voices = window.speechSynthesis.getVoices();
-        if (voices.length) {
-          resolve(voices);
-          return;
-        }
-        window.speechSynthesis.onvoiceschanged = () => resolve(window.speechSynthesis.getVoices());
-      });
-
-      try {
-        const voices = await getVoices();
-        if (isCleanedUp) return;
-
-        let selectedVoice = voices.find(v =>
-          v.lang.startsWith('en') &&
-          (voice === 'male' ? /male/i.test(v.name) && !/female/i.test(v.name) : /female/i.test(v.name))
-        );
-        if (!selectedVoice) {
-            selectedVoice = voices.find(v => v.lang.startsWith('en'));
-        }
-        if (selectedVoice) {
-          utterance.voice = selectedVoice;
-        }
-
-        utterance.onend = () => {
-          if (!isCleanedUp) {
-            setIsSpeaking(false);
-            setTimeout(() => {
-              if (!isCleanedUp) startRecording();
-            }, 100);
+    if (audioDataUri && audioRef.current) {
+        const playAudio = async () => {
+          try {
+              audioRef.current!.src = audioDataUri;
+              await audioRef.current!.play();
+              setIsSpeaking(true);
+          } catch (error) {
+              console.error("Audio playback failed:", error);
+              toast({
+                  variant: 'destructive',
+                  title: 'Audio Playback Error',
+                  description: 'Could not play audio. Starting recording directly.'
+              });
+              startRecording();
           }
         };
-
-        utterance.onerror = (event) => {
-          if (isCleanedUp || event.error === 'interrupted') return;
-          
-          setIsSpeaking(false);
-          console.error('SpeechSynthesis Error:', event.error);
-          toast({
-            variant: 'destructive',
-            title: 'Text-to-Speech Error',
-            description: 'Could not play audio. Starting recording directly.',
-          });
-          startRecording();
-        };
-
-        window.speechSynthesis.speak(utterance);
-      } catch (error) {
-        if (isCleanedUp) return;
-        console.error("Failed to get voices for TTS", error);
-        setIsSpeaking(false);
+        playAudio();
+    } else if (!isFetchingAudio && !audioDataUri) {
+        // If fetching is done and there's no audio (due to error), start recording
         startRecording();
-      }
-    };
-
-    speakAndThenRecord();
-
-    return () => {
-      isCleanedUp = true;
-      window.speechSynthesis.cancel();
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
-  }, [question, voice, startRecording, toast]);
+    }
+  }, [audioDataUri, isFetchingAudio, startRecording, toast]);
+  
+  const handleAudioEnd = () => {
+    setIsSpeaking(false);
+    startRecording();
+  };
 
   const handleSubmit = () => {
     if (transcript.trim()) {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
+      stopRecording();
       onAnswerSubmit(transcript);
     }
   };
 
   const getStatusMessage = () => {
+    if (isFetchingAudio) {
+      return (
+        <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
+          <Bot />
+          <span>Generating audio...</span>
+        </div>
+      );
+    }
     if (isSpeaking) {
       return (
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -226,6 +173,8 @@ export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: 
           {getStatusMessage()}
         </CardContent>
       </Card>
+      
+      <audio ref={audioRef} onEnded={handleAudioEnd} className="hidden" />
 
       <Card>
         <CardHeader>

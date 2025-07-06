@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { analyzeAnswerQuality } from '@/app/actions';
+import { useState, useEffect } from 'react';
+import { analyzeAnswerQuality, textToSpeech } from '@/app/actions';
 import { TopicForm } from './topic-form';
 import { InterviewCard } from './interview-card';
 import { FeedbackCard } from './feedback-card';
@@ -42,6 +42,9 @@ const DUMMY_QUESTIONS: Record<string, string[]> = {
   ]
 };
 
+// Use a simple in-memory cache for audio to reduce API calls
+const audioCache = new Map<string, string>();
+
 export function VoiceMockupApp() {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>('topic');
@@ -52,6 +55,39 @@ export function VoiceMockupApp() {
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isFetchingAudio, setIsFetchingAudio] = useState(false);
+  const [currentAudio, setCurrentAudio] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (step === 'interview' && questions.length > 0) {
+      const fetchAudio = async () => {
+        setIsFetchingAudio(true);
+        setCurrentAudio(null);
+        const questionText = questions[currentQuestionIndex];
+        
+        if (audioCache.has(questionText)) {
+          setCurrentAudio(audioCache.get(questionText)!);
+          setIsFetchingAudio(false);
+          return;
+        }
+
+        const { audioDataUri, error } = await textToSpeech({ text: questionText, voice });
+
+        if (error) {
+          toast({
+            variant: 'destructive',
+            title: 'Text-to-Speech Error',
+            description: 'Could not generate audio. The interview will proceed without it.',
+          });
+        } else if (audioDataUri) {
+          audioCache.set(questionText, audioDataUri);
+          setCurrentAudio(audioDataUri);
+        }
+        setIsFetchingAudio(false);
+      };
+      fetchAudio();
+    }
+  }, [step, currentQuestionIndex, questions, voice, toast]);
   
   const handleTopicSubmit = (submittedTopic: string, selectedVoice: InterviewVoice) => {
     setIsGenerating(true);
@@ -67,6 +103,7 @@ export function VoiceMockupApp() {
     const selectedQuestion = questionPool[Math.floor(Math.random() * questionPool.length)];
 
     setQuestions([selectedQuestion]);
+    setCurrentAudio(null);
     setStep('interview');
     
     // Using a timeout to make the UI transition feel smoother
@@ -108,6 +145,7 @@ export function VoiceMockupApp() {
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setResults([]);
+    setCurrentAudio(null);
   };
 
   const renderStep = () => {
@@ -119,9 +157,10 @@ export function VoiceMockupApp() {
         return (
           <InterviewCard
             question={questions[currentQuestionIndex]}
+            audioDataUri={currentAudio}
             onAnswerSubmit={handleAnswerSubmit}
             isAnalyzing={isAnalyzing}
-            voice={voice}
+            isFetchingAudio={isFetchingAudio}
           />
         );
 
