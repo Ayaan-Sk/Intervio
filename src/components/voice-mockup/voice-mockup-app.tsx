@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { analyzeAnswerQuality, textToSpeech } from '@/app/actions';
+import { useState } from 'react';
+import { analyzeAnswerQuality } from '@/app/actions';
 import { TopicForm } from './topic-form';
 import { InterviewCard } from './interview-card';
 import { FeedbackCard } from './feedback-card';
@@ -20,7 +20,7 @@ interface AnalysisResult {
 }
 
 type Step = 'topic' | 'interview' | 'feedback' | 'summary';
-export type InterviewVoice = 'Algenib' | 'Electra';
+export type InterviewVoice = 'male' | 'female';
 
 const DUMMY_QUESTIONS: Record<string, string[]> = {
   'react': [
@@ -46,56 +46,13 @@ export function VoiceMockupApp() {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>('topic');
   const [topic, setTopic] = useState('');
-  const [voice, setVoice] = useState<InterviewVoice>('Algenib');
+  const [voice, setVoice] = useState<InterviewVoice>('male');
   const [questions, setQuestions] = useState<string[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
-  const [ttsCache, setTtsCache] = useState<Record<string, string>>({});
-  const [currentAudioSrc, setCurrentAudioSrc] = useState<string | null>(null);
-  const [isReadingQuestion, setIsReadingQuestion] = useState(false);
-
-  useEffect(() => {
-    if (step === 'interview') {
-      const fetchAudio = async () => {
-        const currentQuestion = questions[currentQuestionIndex];
-        if (!currentQuestion) return;
-
-        const cacheKey = `${voice}:${currentQuestion}`;
-        if (ttsCache[cacheKey]) {
-          setCurrentAudioSrc(ttsCache[cacheKey]);
-          return;
-        }
-
-        setIsReadingQuestion(true);
-        setCurrentAudioSrc(null);
-        try {
-          const response = await textToSpeech({ text: currentQuestion, voice });
-          if (response.audioDataUri) {
-            setTtsCache(prev => ({ ...prev, [cacheKey]: response.audioDataUri }));
-            setCurrentAudioSrc(response.audioDataUri);
-          } else {
-            throw new Error(response.error || 'No audio data URI in response');
-          }
-        } catch (error) {
-          console.error("Failed to get TTS audio", error);
-          toast({
-            variant: 'destructive',
-            title: 'Text-to-Speech Failed',
-            description: 'Could not play audio. Recording will start now.',
-          });
-          setTtsCache(prev => ({...prev, [cacheKey]: 'error'}));
-          setCurrentAudioSrc('error');
-        } finally {
-          setIsReadingQuestion(false);
-        }
-      };
-      fetchAudio();
-    }
-  }, [step, currentQuestionIndex, questions, voice, toast, ttsCache]);
-
   const handleTopicSubmit = (submittedTopic: string, selectedVoice: InterviewVoice) => {
     setIsGenerating(true);
     setTopic(submittedTopic);
@@ -106,9 +63,10 @@ export function VoiceMockupApp() {
     );
     
     const questionPool = topicKey ? DUMMY_QUESTIONS[topicKey] : DUMMY_QUESTIONS['default'];
+    // Using an array with one question to simulate a shorter interview and avoid API rate limits on analysis.
     const selectedQuestion = questionPool[Math.floor(Math.random() * questionPool.length)];
 
-    setQuestions([selectedQuestion]); // Using an array with one question to avoid API rate limits.
+    setQuestions([selectedQuestion]);
     setStep('interview');
     
     // Using a timeout to make the UI transition feel smoother
@@ -150,7 +108,6 @@ export function VoiceMockupApp() {
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setResults([]);
-    setCurrentAudioSrc(null);
   };
 
   const renderStep = () => {
@@ -164,8 +121,7 @@ export function VoiceMockupApp() {
             question={questions[currentQuestionIndex]}
             onAnswerSubmit={handleAnswerSubmit}
             isAnalyzing={isAnalyzing}
-            audioSrc={currentAudioSrc}
-            isReadingQuestion={isReadingQuestion}
+            voice={voice}
           />
         );
 

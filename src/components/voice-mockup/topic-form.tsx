@@ -13,20 +13,20 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const formSchema = z.object({
   topic: z.string().min(2, 'Topic must be at least 2 characters.').max(50, 'Topic is too long.'),
-  voice: z.enum(['Algenib', 'Electra'], {
+  voice: z.enum(['male', 'female'], {
     required_error: "You need to select a voice."
   }),
 });
 
 type TopicFormProps = {
-  onSubmit: (topic: string, voice: 'Algenib' | 'Electra') => void;
+  onSubmit: (topic: string, voice: 'male' | 'female') => void;
   isGenerating: boolean;
 };
 
 export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { topic: '', voice: 'Algenib' },
+    defaultValues: { topic: '', voice: 'male' },
   });
 
   function handleSubmit(values: z.infer<typeof formSchema>) {
@@ -69,7 +69,7 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
                     >
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value="Algenib" />
+                          <RadioGroupItem value="male" />
                         </FormControl>
                         <FormLabel className="font-normal">
                           Male Voice
@@ -77,7 +77,7 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
                       </FormItem>
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value="Electra" />
+                          <RadioGroupItem value="female" />
                         </FormControl>
                         <FormLabel className="font-normal">
                           Female Voice

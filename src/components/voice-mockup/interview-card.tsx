@@ -7,29 +7,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Mic, Speaker, Volume2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { InterviewVoice } from './voice-mockup-app';
 
 interface InterviewCardProps {
   question: string;
+  voice: InterviewVoice;
   onAnswerSubmit: (answer: string) => void;
   isAnalyzing: boolean;
-  audioSrc: string | null;
-  isReadingQuestion: boolean;
 }
 
-export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, audioSrc, isReadingQuestion }: InterviewCardProps) {
+export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: InterviewCardProps) {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   const startRecording = useCallback(() => {
     if (recognitionRef.current && !isRecording) {
       setTranscript('');
       try {
         recognitionRef.current.start();
-        setIsRecording(true);
       } catch (e) {
         console.warn('Speech recognition could not be started, may already be active.', e);
         if (!isRecording) setIsRecording(true);
@@ -37,17 +36,73 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, audioSrc,
     }
   }, [isRecording]);
 
+  // Effect to handle browser Text-to-Speech
   useEffect(() => {
-    // Reset state when question changes
-    setTranscript('');
-    setIsRecording(false);
-    recognitionRef.current?.stop();
-    if(audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
     }
-  }, [question]);
+    recognitionRef.current?.stop();
+    setIsRecording(false);
+    setTranscript('');
 
+    if (!question) return;
+
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(question);
+      
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        startRecording();
+      };
+      utterance.onerror = (event) => {
+        setIsSpeaking(false);
+        console.error('SpeechSynthesis Error:', event.error);
+        toast({
+          variant: 'destructive',
+          title: 'Text-to-Speech Error',
+          description: 'Could not play audio. Starting recording directly.',
+        });
+        startRecording();
+      };
+
+      const setVoiceAndSpeak = () => {
+        const voices = window.speechSynthesis.getVoices();
+        let selectedVoice = voices.find(v => 
+          v.lang.startsWith('en') && 
+          (voice === 'male' ? /male/i.test(v.name) : /female/i.test(v.name))
+        );
+        if (!selectedVoice) {
+          selectedVoice = voices.find(v => v.lang.startsWith('en'));
+        }
+        if (selectedVoice) utterance.voice = selectedVoice;
+        
+        window.speechSynthesis.speak(utterance);
+      };
+
+      if (window.speechSynthesis.getVoices().length === 0) {
+        window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
+      } else {
+        setVoiceAndSpeak();
+      }
+    } else {
+      toast({
+        title: 'Text-to-Speech Not Supported',
+        description: 'Starting recording immediately.',
+      });
+      setTimeout(() => startRecording(), 500);
+    }
+
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      recognitionRef.current?.stop();
+      setIsSpeaking(false);
+    };
+  }, [question, voice, startRecording, toast]);
+
+  // Effect to initialize SpeechRecognition
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -83,9 +138,8 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, audioSrc,
       setIsRecording(false);
     };
 
-    recognition.onend = () => {
-      setIsRecording(false);
-    };
+    recognition.onstart = () => setIsRecording(true);
+    recognition.onend = () => setIsRecording(false);
 
     recognitionRef.current = recognition;
 
@@ -93,24 +147,6 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, audioSrc,
       recognitionRef.current?.stop();
     }
   }, [toast]);
-  
-  useEffect(() => {
-    if (audioSrc && audioSrc !== 'error' && audioRef.current) {
-      audioRef.current.play().catch(e => {
-        console.error("Audio playback failed", e);
-        toast({
-          variant: 'destructive',
-          title: 'Audio Playback Blocked',
-          description: 'Please interact with the page to enable audio. Starting recording.',
-        });
-        startRecording();
-      });
-    } else if (audioSrc === 'error') {
-      // TTS failed, start recording immediately.
-      const timer = setTimeout(() => startRecording(), 500); // Small delay to allow UI to update
-      return () => clearTimeout(timer);
-    }
-  }, [audioSrc, startRecording, toast]);
 
   const handleSubmit = () => {
     if (transcript.trim()) {
@@ -120,19 +156,11 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, audioSrc,
   };
 
   const getStatusMessage = () => {
-    if (isReadingQuestion) {
-      return (
-        <div className="flex items-center gap-2 text-primary">
-          <Loader2 className="animate-spin" />
-          <span>Generating question audio...</span>
-        </div>
-      );
-    }
-    if (audioSrc && audioSrc !== 'error' && !isRecording && !audioRef.current?.ended) {
+    if (isSpeaking) {
       return (
         <div className="flex items-center gap-2 text-muted-foreground">
           <Volume2 />
-          <span>Listen to the question. Recording will start after.</span>
+          <span>Listen to the question.</span>
         </div>
       );
     }
@@ -154,12 +182,6 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, audioSrc,
 
   return (
     <div className="space-y-6 w-full max-w-2xl animate-fade-in">
-      <audio 
-        ref={audioRef} 
-        src={audioSrc && audioSrc !== 'error' ? audioSrc : undefined}
-        onEnded={startRecording}
-        hidden
-      />
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-2xl">{question}</CardTitle>
