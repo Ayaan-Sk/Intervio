@@ -23,86 +23,21 @@ export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: 
   const [transcript, setTranscript] = useState('');
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const isRecordingRef = useRef(false);
 
   const startRecording = useCallback(() => {
-    if (recognitionRef.current && !isRecording) {
+    // Use the ref to prevent starting an already-running recognition
+    if (recognitionRef.current && !isRecordingRef.current) {
       setTranscript('');
       try {
         recognitionRef.current.start();
       } catch (e) {
         console.warn('Speech recognition could not be started, may already be active.', e);
-        if (!isRecording) setIsRecording(true);
       }
     }
-  }, [isRecording]);
+  }, []); // Empty dependency array makes this function stable
 
-  // Effect to handle browser Text-to-Speech
-  useEffect(() => {
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    recognitionRef.current?.stop();
-    setIsRecording(false);
-    setTranscript('');
-
-    if (!question) return;
-
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(question);
-      
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        startRecording();
-      };
-      utterance.onerror = (event) => {
-        setIsSpeaking(false);
-        console.error('SpeechSynthesis Error:', event.error);
-        toast({
-          variant: 'destructive',
-          title: 'Text-to-Speech Error',
-          description: 'Could not play audio. Starting recording directly.',
-        });
-        startRecording();
-      };
-
-      const setVoiceAndSpeak = () => {
-        const voices = window.speechSynthesis.getVoices();
-        let selectedVoice = voices.find(v => 
-          v.lang.startsWith('en') && 
-          (voice === 'male' ? /male/i.test(v.name) : /female/i.test(v.name))
-        );
-        if (!selectedVoice) {
-          selectedVoice = voices.find(v => v.lang.startsWith('en'));
-        }
-        if (selectedVoice) utterance.voice = selectedVoice;
-        
-        window.speechSynthesis.speak(utterance);
-      };
-
-      if (window.speechSynthesis.getVoices().length === 0) {
-        window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
-      } else {
-        setVoiceAndSpeak();
-      }
-    } else {
-      toast({
-        title: 'Text-to-Speech Not Supported',
-        description: 'Starting recording immediately.',
-      });
-      setTimeout(() => startRecording(), 500);
-    }
-
-    return () => {
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-      recognitionRef.current?.stop();
-      setIsSpeaking(false);
-    };
-  }, [question, voice, startRecording, toast]);
-
-  // Effect to initialize SpeechRecognition
+  // Effect to initialize SpeechRecognition on mount
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -126,7 +61,9 @@ export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: 
           finalTranscript += event.results[i][0].transcript;
         }
       }
-      setTranscript((prev) => prev + finalTranscript);
+      if (finalTranscript) {
+        setTranscript((prev) => prev + finalTranscript.trim() + ' ');
+      }
     };
     
     recognition.onerror = (event) => {
@@ -136,17 +73,92 @@ export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: 
         description: `Error: ${event.error}. Please ensure microphone access is allowed.`,
       });
       setIsRecording(false);
+      isRecordingRef.current = false;
     };
 
-    recognition.onstart = () => setIsRecording(true);
-    recognition.onend = () => setIsRecording(false);
+    recognition.onstart = () => {
+      setIsRecording(true);
+      isRecordingRef.current = true;
+    };
+    
+    recognition.onend = () => {
+      setIsRecording(false);
+      isRecordingRef.current = false;
+    };
 
     recognitionRef.current = recognition;
 
     return () => {
       recognitionRef.current?.stop();
-    }
+    };
   }, [toast]);
+
+  // Effect to handle Text-to-Speech when the question changes
+  useEffect(() => {
+    if (!question || !('speechSynthesis' in window)) {
+      return;
+    }
+
+    // A small delay to ensure recognition is ready and to prevent abrupt cleanup/restart cycles
+    const speakTimeout = setTimeout(() => {
+        window.speechSynthesis.cancel();
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+        setIsRecording(false);
+        isRecordingRef.current = false;
+        setIsSpeaking(false);
+        setTranscript('');
+
+        const utterance = new SpeechSynthesisUtterance(question);
+        
+        utterance.onstart = () => setIsSpeaking(true);
+        
+        utterance.onend = () => {
+          setIsSpeaking(false);
+          startRecording();
+        };
+
+        utterance.onerror = (event) => {
+          setIsSpeaking(false);
+          console.error('SpeechSynthesis Error:', event.error);
+          toast({
+            variant: 'destructive',
+            title: 'Text-to-Speech Error',
+            description: 'Could not play audio. Starting recording directly.',
+          });
+          startRecording();
+        };
+
+        const setVoiceAndSpeak = () => {
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                let selectedVoice = voices.find(v => 
+                    v.lang.startsWith('en') && 
+                    (voice === 'male' ? /male/i.test(v.name) : /female/i.test(v.name))
+                );
+                if (!selectedVoice) {
+                    selectedVoice = voices.find(v => v.lang.startsWith('en'));
+                }
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+            }
+            window.speechSynthesis.speak(utterance);
+        };
+
+        if (window.speechSynthesis.getVoices().length === 0) {
+            window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
+        } else {
+            setVoiceAndSpeak();
+        }
+    }, 100);
+
+    return () => {
+      clearTimeout(speakTimeout);
+      window.speechSynthesis.cancel();
+    };
+  }, [question, voice, startRecording, toast]);
 
   const handleSubmit = () => {
     if (transcript.trim()) {
