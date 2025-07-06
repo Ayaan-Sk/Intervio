@@ -24,25 +24,44 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isComponentMounted = useRef(true);
+
+  // Use a ref to track the recording state to create stable callbacks
+  const isRecordingRef = useRef(isRecording);
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
 
   const startRecording = useCallback(() => {
-    if (recognitionRef.current && !isRecording) {
+    if (recognitionRef.current && !isRecordingRef.current) {
       setTranscript('');
       try {
         recognitionRef.current.start();
         setIsRecording(true);
       } catch (e) {
+        // This can happen if start() is called while it's already starting.
         console.warn('Speech recognition could not be started, may already be active.', e);
       }
     }
-  }, [isRecording]);
+  }, []); // Stable callback
 
   const stopRecording = useCallback(() => {
-    if (recognitionRef.current && isRecording) {
+    if (recognitionRef.current && isRecordingRef.current) {
+      // onend will handle setting isRecording to false
       recognitionRef.current.stop();
-      setIsRecording(false);
     }
-  }, [isRecording]);
+  }, []); // Stable callback
+
+  useEffect(() => {
+    // Set mounted ref to false on unmount to prevent state updates
+    isComponentMounted.current = true;
+    return () => {
+      isComponentMounted.current = false;
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -69,6 +88,8 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
     };
     
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (!isComponentMounted.current) return;
+      
       let errorMessage = `An unknown error occurred: ${event.error}. Please try again.`;
       switch (event.error) {
         case 'no-speech':
@@ -97,39 +118,45 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
     };
     
     recognition.onend = () => {
-      setIsRecording(false);
+      if (isComponentMounted.current) {
+        setIsRecording(false);
+      }
     };
 
     recognitionRef.current = recognition;
 
     return () => {
       if (recognitionRef.current) {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
         recognitionRef.current.stop();
       }
     };
   }, [toast]);
 
   useEffect(() => {
+    // This effect handles playing the audio when the data URI is available.
     if (audioDataUri && audioRef.current) {
-        const playAudio = async () => {
-          try {
-              audioRef.current!.src = audioDataUri;
-              await audioRef.current!.play();
-              setIsSpeaking(true);
-          } catch (error) {
-              console.error("Audio playback failed:", error);
-              toast({
-                  variant: 'destructive',
-                  title: 'Audio Playback Error',
-                  description: 'Could not play audio. Starting recording directly.'
-              });
-              startRecording();
-          }
-        };
-        playAudio();
+      const playAudio = async () => {
+        try {
+          audioRef.current!.src = audioDataUri;
+          await audioRef.current!.play();
+          setIsSpeaking(true);
+        } catch (error) {
+          console.error("Audio playback failed:", error);
+          toast({
+            variant: 'destructive',
+            title: 'Audio Playback Error',
+            description: 'Could not play audio. Starting recording directly.'
+          });
+          startRecording();
+        }
+      };
+      playAudio();
     } else if (!isFetchingAudio && !audioDataUri) {
-        // If fetching is done and there's no audio (due to error), start recording
-        startRecording();
+      // If fetching is done and there's no audio (e.g., due to an API error), start recording.
+      startRecording();
     }
   }, [audioDataUri, isFetchingAudio, startRecording, toast]);
   
