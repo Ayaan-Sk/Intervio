@@ -89,7 +89,9 @@ export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: 
     recognitionRef.current = recognition;
 
     return () => {
-      recognitionRef.current?.stop();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
     };
   }, [toast]);
 
@@ -99,70 +101,81 @@ export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: 
       return;
     }
 
-    // A small delay to ensure recognition is ready and to prevent abrupt cleanup/restart cycles
-    const speakTimeout = setTimeout(() => {
-        window.speechSynthesis.cancel();
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
+    // Stop any previous actions before starting new ones.
+    window.speechSynthesis.cancel();
+    if (recognitionRef.current && isRecordingRef.current) {
+      recognitionRef.current.stop();
+    }
+
+    // Reset state for the new question.
+    setTranscript('');
+    setIsRecording(false);
+    isRecordingRef.current = false;
+    setIsSpeaking(true);
+
+    const utterance = new SpeechSynthesisUtterance(question);
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      // A short delay can help ensure the audio channel is released before recording starts.
+      setTimeout(() => startRecording(), 100);
+    };
+
+    utterance.onerror = (event) => {
+      // The 'interrupted' error is expected when the component unmounts or the question changes.
+      // We can safely ignore it to avoid showing an unnecessary error toast.
+      if (event.error === 'interrupted') {
+        console.log('Speech synthesis interrupted, this is expected on question change.');
+        return;
+      }
+
+      setIsSpeaking(false);
+      console.error('SpeechSynthesis Error:', event.error);
+      toast({
+        variant: 'destructive',
+        title: 'Text-to-Speech Error',
+        description: 'Could not play audio. Starting recording directly.',
+      });
+      // Fallback to recording if speech fails for other reasons.
+      startRecording();
+    };
+
+    const setVoiceAndSpeak = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        let selectedVoice = voices.find(v =>
+          v.lang.startsWith('en') &&
+          (voice === 'male' ? /male/i.test(v.name) : /female/i.test(v.name))
+        );
+        if (!selectedVoice) {
+          selectedVoice = voices.find(v => v.lang.startsWith('en'));
         }
-        setIsRecording(false);
-        isRecordingRef.current = false;
-        setIsSpeaking(false);
-        setTranscript('');
-
-        const utterance = new SpeechSynthesisUtterance(question);
-        
-        utterance.onstart = () => setIsSpeaking(true);
-        
-        utterance.onend = () => {
-          setIsSpeaking(false);
-          startRecording();
-        };
-
-        utterance.onerror = (event) => {
-          setIsSpeaking(false);
-          console.error('SpeechSynthesis Error:', event.error);
-          toast({
-            variant: 'destructive',
-            title: 'Text-to-Speech Error',
-            description: 'Could not play audio. Starting recording directly.',
-          });
-          startRecording();
-        };
-
-        const setVoiceAndSpeak = () => {
-            const voices = window.speechSynthesis.getVoices();
-            if (voices.length > 0) {
-                let selectedVoice = voices.find(v => 
-                    v.lang.startsWith('en') && 
-                    (voice === 'male' ? /male/i.test(v.name) : /female/i.test(v.name))
-                );
-                if (!selectedVoice) {
-                    selectedVoice = voices.find(v => v.lang.startsWith('en'));
-                }
-                if (selectedVoice) {
-                    utterance.voice = selectedVoice;
-                }
-            }
-            window.speechSynthesis.speak(utterance);
-        };
-
-        if (window.speechSynthesis.getVoices().length === 0) {
-            window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
-        } else {
-            setVoiceAndSpeak();
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
         }
-    }, 100);
+      }
+      window.speechSynthesis.speak(utterance);
+    };
 
+    // The voices list might load asynchronously.
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
+    } else {
+      setVoiceAndSpeak();
+    }
+
+    // The cleanup function is crucial to stop speech when the component unmounts
+    // or when this effect re-runs for a new question.
     return () => {
-      clearTimeout(speakTimeout);
       window.speechSynthesis.cancel();
     };
   }, [question, voice, startRecording, toast]);
 
   const handleSubmit = () => {
     if (transcript.trim()) {
-      recognitionRef.current?.stop();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
       onAnswerSubmit(transcript);
     }
   };
