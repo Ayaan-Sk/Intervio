@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -93,7 +92,7 @@ const DUMMY_QUESTIONS: Record<string, string[]> = {
 export function VoiceMockupApp() {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>('topic');
-  const [topic, setTopic] = useState('');
+  const [topics, setTopics] = useState<string[]>([]);
   const [voice, setVoice] = useState<InterviewVoice>('male');
   const [questions, setQuestions] = useState<string[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -101,12 +100,12 @@ export function VoiceMockupApp() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
-  const handleTopicSubmit = (submittedTopic: string, selectedVoice: InterviewVoice) => {
+  const handleTopicSubmit = (submittedTopics: string[], selectedVoice: InterviewVoice) => {
     setIsGenerating(true);
-    setTopic(submittedTopic);
+    setTopics(submittedTopics);
     setVoice(selectedVoice);
 
-    const questionPool = DUMMY_QUESTIONS[submittedTopic] || DUMMY_QUESTIONS['general'];
+    const questionPool = submittedTopics.flatMap(topic => DUMMY_QUESTIONS[topic] || []);
     
     // Select 3 random questions from the pool without repetition
     const shuffled = [...questionPool].sort(() => 0.5 - Math.random());
@@ -150,7 +149,7 @@ export function VoiceMockupApp() {
 
   const handleRestart = () => {
     setStep('topic');
-    setTopic('');
+    setTopics([]);
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setResults([]);

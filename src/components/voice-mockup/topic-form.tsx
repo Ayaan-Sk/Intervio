@@ -5,20 +5,16 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+
+const topics = ["react", "docker", "kubernetes", "general"] as const;
 
 const formSchema = z.object({
-  topic: z.string({
-    required_error: 'Please select a topic.',
+  topics: z.array(z.string()).refine((value) => value.some((item) => item), {
+    message: "You have to select at least one topic.",
   }),
   voice: z.enum(['male', 'female'], {
     required_error: 'You need to select a voice.',
@@ -26,18 +22,21 @@ const formSchema = z.object({
 });
 
 type TopicFormProps = {
-  onSubmit: (topic: string, voice: 'male' | 'female') => void;
+  onSubmit: (topics: string[], voice: 'male' | 'female') => void;
   isGenerating: boolean;
 };
 
 export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { voice: 'male' },
+    defaultValues: { 
+      topics: [],
+      voice: 'male' 
+    },
   });
 
   function handleSubmit(values: z.infer<typeof formSchema>) {
-    onSubmit(values.topic, values.voice);
+    onSubmit(values.topics, values.voice);
   }
 
   return (
@@ -45,7 +44,7 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
       <CardHeader>
         <CardTitle className="font-headline">Welcome to Voice Mockup</CardTitle>
         <CardDescription>
-          Select a technical topic and a voice to start your mock interview.
+          Select one or more topics and a voice to start your mock interview.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -53,23 +52,48 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="topic"
-              render={({ field }) => (
+              name="topics"
+              render={() => (
                 <FormItem>
-                  <FormLabel>Technical Topic</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a topic for the interview" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="react">React</SelectItem>
-                      <SelectItem value="docker">Docker</SelectItem>
-                      <SelectItem value="kubernetes">Kubernetes</SelectItem>
-                      <SelectItem value="general">General</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="mb-4">
+                    <FormLabel>Technical Topics</FormLabel>
+                    <FormDescription>
+                      Select one or more topics for your interview.
+                    </FormDescription>
+                  </div>
+                  {topics.map((item) => (
+                    <FormField
+                      key={item}
+                      control={form.control}
+                      name="topics"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={item}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(item)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), item])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== item
+                                        )
+                                      );
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal capitalize">
+                              {item}
+                            </FormLabel>
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  ))}
                   <FormMessage />
                 </FormItem>
               )}
