@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { analyzeAnswerQuality } from '@/app/actions';
+import { useState, useEffect } from 'react';
+import { analyzeAnswerQuality, textToSpeech } from '@/app/actions';
 import { TopicForm } from './topic-form';
 import { InterviewCard } from './interview-card';
 import { FeedbackCard } from './feedback-card';
@@ -52,6 +52,48 @@ export function VoiceMockupApp() {
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  const [ttsCache, setTtsCache] = useState<Record<string, string>>({});
+  const [currentAudioSrc, setCurrentAudioSrc] = useState<string | null>(null);
+  const [isReadingQuestion, setIsReadingQuestion] = useState(false);
+
+  useEffect(() => {
+    if (step === 'interview') {
+      const fetchAudio = async () => {
+        const currentQuestion = questions[currentQuestionIndex];
+        if (!currentQuestion) return;
+
+        const cacheKey = `${voice}:${currentQuestion}`;
+        if (ttsCache[cacheKey]) {
+          setCurrentAudioSrc(ttsCache[cacheKey]);
+          return;
+        }
+
+        setIsReadingQuestion(true);
+        setCurrentAudioSrc(null);
+        try {
+          const response = await textToSpeech({ text: currentQuestion, voice });
+          if (response.audioDataUri) {
+            setTtsCache(prev => ({ ...prev, [cacheKey]: response.audioDataUri }));
+            setCurrentAudioSrc(response.audioDataUri);
+          } else {
+            throw new Error('No audio data URI in response');
+          }
+        } catch (error) {
+          console.error("Failed to get TTS audio", error);
+          toast({
+            variant: 'destructive',
+            title: 'Text-to-Speech Failed',
+            description: 'Could not play audio. Recording will start now.',
+          });
+          setCurrentAudioSrc('error');
+        } finally {
+          setIsReadingQuestion(false);
+        }
+      };
+      fetchAudio();
+    }
+  }, [step, currentQuestionIndex, questions, voice, toast]);
 
   const handleTopicSubmit = (submittedTopic: string, selectedVoice: InterviewVoice) => {
     setIsGenerating(true);
@@ -107,6 +149,7 @@ export function VoiceMockupApp() {
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setResults([]);
+    setCurrentAudioSrc(null);
   };
 
   const renderStep = () => {
@@ -120,7 +163,8 @@ export function VoiceMockupApp() {
             question={questions[currentQuestionIndex]}
             onAnswerSubmit={handleAnswerSubmit}
             isAnalyzing={isAnalyzing}
-            voice={voice}
+            audioSrc={currentAudioSrc}
+            isReadingQuestion={isReadingQuestion}
           />
         );
 
