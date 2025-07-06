@@ -28,7 +28,13 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, voice }: 
   const startRecording = useCallback(() => {
     if (recognitionRef.current && !isRecording) {
       setTranscript('');
-      recognitionRef.current.start();
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        // This error can happen if recognition is already started, e.g. due to a quick re-render.
+        // We'll log it and proceed, as the desired state (recording) is or will be active.
+        console.warn('Speech recognition could not be started, may already be active.', e);
+      }
       setIsRecording(true);
     }
   }, [isRecording]);
