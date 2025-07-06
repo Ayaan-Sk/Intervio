@@ -1,20 +1,45 @@
 'use client';
 
+import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { Loader2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Check, ChevronsUpDown, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const topics = ["react", "docker", "kubernetes", "general"] as const;
+const programmingTopics = [
+  { value: 'react', label: 'React' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'python', label: 'Python' },
+  { value: 'java', label: 'Java' },
+  { value: 'c++', label: 'C++' },
+  { value: 'c#', label: 'C#' },
+  { value: 'go', label: 'Go' },
+  { value: 'rust', label: 'Rust' },
+  { value: 'swift', label: 'Swift' },
+  { value: 'kotlin', label: 'Kotlin' },
+  { value: 'ruby', label: 'Ruby' },
+  { value: 'php', label: 'PHP' },
+  { value: 'scala', label: 'Scala' },
+  { value: 'sql', label: 'SQL' },
+  { value: 'html', label: 'HTML' },
+  { value: 'css', label: 'CSS' },
+  { value: 'docker', label: 'Docker' },
+  { value: 'kubernetes', label: 'Kubernetes' },
+  { value: 'general', label: 'General' },
+] as const;
 
 const formSchema = z.object({
-  topics: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: "You have to select at least one topic.",
+  topics: z.array(z.string()).refine((value) => value.length > 0, {
+    message: 'You have to select at least one topic.',
   }),
   voice: z.enum(['male', 'female'], {
     required_error: 'You need to select a voice.',
@@ -29,9 +54,9 @@ type TopicFormProps = {
 export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { 
+    defaultValues: {
       topics: [],
-      voice: 'male' 
+      voice: 'male',
     },
   });
 
@@ -39,65 +64,96 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
     onSubmit(values.topics, values.voice);
   }
 
+  const selectedTopics = form.watch('topics');
+
   return (
     <Card className="w-full max-w-lg animate-fade-in-up">
       <CardHeader>
         <CardTitle className="font-headline">Welcome to Voice Mockup</CardTitle>
-        <CardDescription>
-          Select one or more topics and a voice to start your mock interview.
-        </CardDescription>
+        <CardDescription>Select one or more topics and a voice to start your mock interview.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
             <FormField
               control={form.control}
               name="topics"
-              render={() => (
-                <FormItem>
-                  <div className="mb-4">
-                    <FormLabel>Technical Topics</FormLabel>
-                    <FormDescription>
-                      Select one or more topics for your interview.
-                    </FormDescription>
-                  </div>
-                  {topics.map((item) => (
-                    <FormField
-                      key={item}
-                      control={form.control}
-                      name="topics"
-                      render={({ field }) => {
-                        return (
-                          <FormItem
-                            key={item}
-                            className="flex flex-row items-start space-x-3 space-y-0"
-                          >
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(item)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...(field.value || []), item])
-                                    : field.onChange(
-                                        field.value?.filter(
-                                          (value) => value !== item
-                                        )
-                                      );
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Technical Topics</FormLabel>
+                  <FormDescription>Search for and select topics for your interview.</FormDescription>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn('w-full justify-between', !field.value?.length && 'text-muted-foreground')}
+                        >
+                          {field.value?.length > 0 ? `${field.value.length} selected` : 'Select topics'}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                        <CommandInput placeholder="Search topics..." />
+                        <CommandList>
+                          <CommandEmpty>No topic found.</CommandEmpty>
+                          <CommandGroup>
+                            {programmingTopics.map((topic) => (
+                              <CommandItem
+                                value={topic.label}
+                                key={topic.value}
+                                onSelect={() => {
+                                  const currentTopics = field.value || [];
+                                  const isSelected = currentTopics.includes(topic.value);
+                                  const newTopics = isSelected
+                                    ? currentTopics.filter((t) => t !== topic.value)
+                                    : [...currentTopics, topic.value];
+                                  field.onChange(newTopics);
                                 }}
-                              />
-                            </FormControl>
-                            <FormLabel className="font-normal capitalize">
-                              {item}
-                            </FormLabel>
-                          </FormItem>
-                        );
-                      }}
-                    />
-                  ))}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    field.value?.includes(topic.value) ? 'opacity-100' : 'opacity-0'
+                                  )}
+                                />
+                                {topic.label}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+
+                  <div className="pt-2 flex flex-wrap gap-2">
+                    {selectedTopics.map((topicValue) => {
+                      const topicLabel = programmingTopics.find((t) => t.value === topicValue)?.label;
+                      return (
+                        <Badge variant="secondary" key={topicValue}>
+                          {topicLabel}
+                          <button
+                            type="button"
+                            className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                            onClick={() => {
+                              const newTopics = selectedTopics.filter((t) => t !== topicValue);
+                              field.onChange(newTopics);
+                            }}
+                          >
+                            <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="voice"
@@ -105,11 +161,7 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
                 <FormItem className="space-y-3">
                   <FormLabel>Interviewer Voice</FormLabel>
                   <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-1"
-                    >
+                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
                           <RadioGroupItem value="male" />

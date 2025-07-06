@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { analyzeAnswerQuality } from '@/app/actions';
 import { TopicForm } from './topic-form';
 import { InterviewCard } from './interview-card';
@@ -86,7 +86,23 @@ const DUMMY_QUESTIONS: Record<string, string[]> = {
     'Tell me about a challenging technical problem you solved recently.',
     'How do you approach learning a new technology or programming language?',
     'Describe your experience with version control systems like Git.',
-  ]
+  ],
+  'javascript': ['What is a closure in JavaScript?'],
+  'typescript': ['What is the difference between an interface and a type in TypeScript?'],
+  'python': ['Explain the difference between a list and a tuple in Python.'],
+  'java': ['What is the difference between `==` and `.equals()` in Java?'],
+  'c++': ['What is a virtual function in C++?'],
+  'c#': ['What is the Common Language Runtime (CLR) in .NET?'],
+  'go': ['What are goroutines and how do they differ from threads?'],
+  'rust': ['What is the ownership model in Rust?'],
+  'swift': ['What is the difference between a class and a struct in Swift?'],
+  'kotlin': ['What are extension functions in Kotlin?'],
+  'ruby': ['What is the difference between a block, a proc, and a lambda in Ruby?'],
+  'php': ['What are Traits in PHP?'],
+  'scala': ['What is a case class in Scala?'],
+  'sql': ['What is the difference between `UNION` and `UNION ALL`?'],
+  'html': ['What is the purpose of the `<!DOCTYPE html>` declaration?'],
+  'css': ['What is the CSS box model?'],
 };
 
 export function VoiceMockupApp() {
