@@ -7,23 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Mic, Speaker, Volume2, Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { InterviewVoice } from './voice-mockup-app';
 
 interface InterviewCardProps {
   question: string;
-  audioDataUri: string | null;
+  voice: InterviewVoice;
   onAnswerSubmit: (answer: string) => void;
   isAnalyzing: boolean;
-  isFetchingAudio: boolean;
 }
 
-export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyzing, isFetchingAudio }: InterviewCardProps) {
+export function InterviewCard({ question, voice, onAnswerSubmit, isAnalyzing }: InterviewCardProps) {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const isRecordingRef = useRef(isRecording);
   useEffect(() => {
@@ -45,6 +44,7 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
   const stopRecording = useCallback(() => {
     if (recognitionRef.current && isRecordingRef.current) {
       recognitionRef.current.stop();
+      setIsRecording(false);
     }
   }, []);
 
@@ -65,7 +65,16 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
-      setTranscript(Array.from(event.results).map(r => r[0].transcript).join(''));
+      let interimTranscript = '';
+      let finalTranscript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+      setTranscript(finalTranscript + interimTranscript);
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -84,7 +93,13 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
           errorMessage = 'A network error occurred during speech recognition.';
           break;
         case 'aborted':
-          return;
+          // Don't show an error if the user intentionally stopped the recording
+          if (isRecordingRef.current) {
+            errorMessage = 'Speech recognition was aborted.';
+          } else {
+            return;
+          }
+          break;
       }
       toast({
         variant: 'destructive',
@@ -101,50 +116,66 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
     recognitionRef.current = recognition;
 
     return () => {
-      recognitionRef.current?.stop();
+      recognitionRef.current?.abort();
     };
   }, [toast]);
-
+  
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    const playAudio = () => {
-      audio.play()
-        .then(() => setIsSpeaking(true))
-        .catch(err => {
-          console.error("Audio playback failed:", err);
-          toast({
-            variant: 'destructive',
-            title: 'Audio Playback Error',
-            description: 'Could not play audio automatically. Proceeding to recording.',
-          });
+    if (!question || typeof window === 'undefined' || !window.speechSynthesis) return;
+
+    const speak = () => {
+        // Cancel any previous speech
+        window.speechSynthesis.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(question);
+        
+        const voices = window.speechSynthesis.getVoices();
+        let selectedVoice: SpeechSynthesisVoice | undefined;
+
+        if (voice === 'male') {
+          selectedVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('David') || v.name.includes('Male')) || voices.find(v => v.lang.startsWith('en') && v.name.includes('Male'));
+        } else {
+          selectedVoice = voices.find(v => v.name.includes('Google UK English Female') || v.name.includes('Zira') || v.name.includes('Female')) || voices.find(v => v.lang.startsWith('en') && v.name.includes('Female'));
+        }
+        
+        utterance.voice = selectedVoice || voices.find(v => v.lang.startsWith('en')) || voices[0];
+        
+        utterance.onstart = () => {
+          setIsSpeaking(true);
+        };
+        
+        utterance.onend = () => {
           setIsSpeaking(false);
           startRecording();
-        });
-    };
+        };
 
-    const handleAudioEnd = () => {
-      setIsSpeaking(false);
-      startRecording();
-    };
-    
-    audio.addEventListener('canplay', playAudio);
-    audio.addEventListener('ended', handleAudioEnd);
+        utterance.onerror = (event) => {
+          setIsSpeaking(false);
+          console.error('SpeechSynthesis Error:', event.error);
+          toast({
+            variant: 'destructive',
+            title: 'Text-to-Speech Error',
+            description: 'Could not play the question audio. Please ensure your browser supports Web Speech API.',
+          });
+          // Fallback to recording immediately
+          startRecording();
+        };
 
-    if (audioDataUri) {
-      audio.src = audioDataUri;
-    } else if (!isFetchingAudio) {
-      startRecording();
+        window.speechSynthesis.speak(utterance);
     }
 
+    // voices are loaded asynchronously.
+    if (window.speechSynthesis.getVoices().length === 0) {
+        window.speechSynthesis.onvoiceschanged = speak;
+    } else {
+        speak();
+    }
+    
     return () => {
-      audio.removeEventListener('canplay', playAudio);
-      audio.removeEventListener('ended', handleAudioEnd);
-      audio.pause();
-      audio.currentTime = 0;
+        window.speechSynthesis.cancel();
+        stopRecording();
     };
-  }, [audioDataUri, isFetchingAudio, startRecording, toast]);
+  }, [question, voice, startRecording, stopRecording, toast]);
 
   const handleSubmit = () => {
     if (transcript.trim()) {
@@ -154,13 +185,6 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
   };
 
   const getStatusMessage = () => {
-    if (isFetchingAudio) {
-      return (
-        <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
-          <Bot /> <span>Generating audio...</span>
-        </div>
-      );
-    }
     if (isSpeaking) {
       return (
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -192,8 +216,6 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
           {getStatusMessage()}
         </CardContent>
       </Card>
-      
-      <audio ref={audioRef} className="hidden" />
 
       <Card>
         <CardHeader>
