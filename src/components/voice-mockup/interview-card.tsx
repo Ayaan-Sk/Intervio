@@ -24,9 +24,7 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const isComponentMounted = useRef(true);
 
-  // Use a ref to track the recording state to create stable callbacks
   const isRecordingRef = useRef(isRecording);
   useEffect(() => {
     isRecordingRef.current = isRecording;
@@ -39,28 +37,15 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
         recognitionRef.current.start();
         setIsRecording(true);
       } catch (e) {
-        // This can happen if start() is called while it's already starting.
-        console.warn('Speech recognition could not be started, may already be active.', e);
+        console.warn('Speech recognition could not be started: ', e);
       }
     }
-  }, []); // Stable callback
+  }, []);
 
   const stopRecording = useCallback(() => {
     if (recognitionRef.current && isRecordingRef.current) {
-      // onend will handle setting isRecording to false
       recognitionRef.current.stop();
     }
-  }, []); // Stable callback
-
-  useEffect(() => {
-    // Set mounted ref to false on unmount to prevent state updates
-    isComponentMounted.current = true;
-    return () => {
-      isComponentMounted.current = false;
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
   }, []);
 
   useEffect(() => {
@@ -80,35 +65,27 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
-      const fullTranscript = Array.from(event.results)
-        .map((result) => result[0])
-        .map((result) => result.transcript)
-        .join('');
-      setTranscript(fullTranscript);
+      setTranscript(Array.from(event.results).map(r => r[0].transcript).join(''));
     };
-    
+
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      if (!isComponentMounted.current) return;
-      
-      let errorMessage = `An unknown error occurred: ${event.error}. Please try again.`;
+      let errorMessage = `An unknown error occurred: ${event.error}.`;
       switch (event.error) {
         case 'no-speech':
-          errorMessage = 'No speech was detected. Please make sure your microphone is working and you are speaking clearly.';
+          errorMessage = 'No speech was detected. Please make sure your microphone is working.';
           break;
         case 'audio-capture':
-          errorMessage = 'Microphone not available. Please ensure it is connected and enabled in your system settings.';
+          errorMessage = 'Microphone not available. Please ensure it is connected and enabled.';
           break;
         case 'not-allowed':
-          errorMessage = 'Microphone access was denied. Please allow microphone access in your browser settings to use this feature.';
+          errorMessage = 'Microphone access denied. Please allow microphone access in your browser settings.';
           break;
         case 'network':
-          errorMessage = 'A network error occurred during speech recognition. Please check your internet connection.';
+          errorMessage = 'A network error occurred during speech recognition.';
           break;
         case 'aborted':
-          // This is a normal event when stopping recording, so we don't need to show an error.
           return;
       }
-
       toast({
         variant: 'destructive',
         title: 'Speech Recognition Error',
@@ -116,54 +93,58 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
       });
       setIsRecording(false);
     };
-    
+
     recognition.onend = () => {
-      if (isComponentMounted.current) {
-        setIsRecording(false);
-      }
+      setIsRecording(false);
     };
 
     recognitionRef.current = recognition;
 
     return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.onresult = null;
-        recognitionRef.current.onerror = null;
-        recognitionRef.current.onend = null;
-        recognitionRef.current.stop();
-      }
+      recognitionRef.current?.stop();
     };
   }, [toast]);
 
   useEffect(() => {
-    // This effect handles playing the audio when the data URI is available.
-    if (audioDataUri && audioRef.current) {
-      const playAudio = async () => {
-        try {
-          audioRef.current!.src = audioDataUri;
-          await audioRef.current!.play();
-          setIsSpeaking(true);
-        } catch (error) {
-          console.error("Audio playback failed:", error);
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    const playAudio = () => {
+      audio.play()
+        .then(() => setIsSpeaking(true))
+        .catch(err => {
+          console.error("Audio playback failed:", err);
           toast({
             variant: 'destructive',
             title: 'Audio Playback Error',
-            description: 'Could not play audio. Starting recording directly.'
+            description: 'Could not play audio automatically. Proceeding to recording.',
           });
+          setIsSpeaking(false);
           startRecording();
-        }
-      };
-      playAudio();
-    } else if (!isFetchingAudio && !audioDataUri) {
-      // If fetching is done and there's no audio (e.g., due to an API error), start recording.
+        });
+    };
+
+    const handleAudioEnd = () => {
+      setIsSpeaking(false);
+      startRecording();
+    };
+    
+    audio.addEventListener('canplay', playAudio);
+    audio.addEventListener('ended', handleAudioEnd);
+
+    if (audioDataUri) {
+      audio.src = audioDataUri;
+    } else if (!isFetchingAudio) {
       startRecording();
     }
+
+    return () => {
+      audio.removeEventListener('canplay', playAudio);
+      audio.removeEventListener('ended', handleAudioEnd);
+      audio.pause();
+      audio.currentTime = 0;
+    };
   }, [audioDataUri, isFetchingAudio, startRecording, toast]);
-  
-  const handleAudioEnd = () => {
-    setIsSpeaking(false);
-    startRecording();
-  };
 
   const handleSubmit = () => {
     if (transcript.trim()) {
@@ -176,31 +157,27 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
     if (isFetchingAudio) {
       return (
         <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
-          <Bot />
-          <span>Generating audio...</span>
+          <Bot /> <span>Generating audio...</span>
         </div>
       );
     }
     if (isSpeaking) {
       return (
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Volume2 />
-          <span>Listen to the question.</span>
+          <Volume2 /> <span>Listen to the question.</span>
         </div>
       );
     }
     if (isRecording) {
       return (
         <div className="flex items-center gap-2 text-red-500">
-          <Mic />
-          <span>Recording... Speak now.</span>
+          <Mic /> <span>Recording... Speak now.</span>
         </div>
       );
     }
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
-        <Speaker />
-        <span>Prepare to answer.</span>
+        <Speaker /> <span>Prepare to answer.</span>
       </div>
     );
   };
@@ -216,7 +193,7 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
         </CardContent>
       </Card>
       
-      <audio ref={audioRef} onEnded={handleAudioEnd} className="hidden" />
+      <audio ref={audioRef} className="hidden" />
 
       <Card>
         <CardHeader>
@@ -232,7 +209,7 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
           />
           <div className="flex flex-col sm:flex-row gap-4">
             <Button onClick={handleSubmit} className="w-full bg-accent hover:bg-accent/90" disabled={!transcript.trim() || isAnalyzing}>
-              {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isAnalyzing ? 'Analyzing...' : 'Submit Answer'}
             </Button>
           </div>
