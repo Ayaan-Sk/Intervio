@@ -20,20 +20,23 @@ interface AnalysisResult {
 }
 
 type Step = 'topic' | 'interview' | 'feedback' | 'summary';
+export type InterviewVoice = 'Algenib' | 'Achernar';
 
 export function VoiceMockupApp() {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>('topic');
   const [topic, setTopic] = useState('');
+  const [voice, setVoice] = useState<InterviewVoice>('Algenib');
   const [questions, setQuestions] = useState<string[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleTopicSubmit = async (submittedTopic: string) => {
+  const handleTopicSubmit = async (submittedTopic: string, selectedVoice: InterviewVoice) => {
     setIsGenerating(true);
     setTopic(submittedTopic);
+    setVoice(selectedVoice);
     try {
       const { questions: generatedQuestions } = await generateInterviewQuestions({ technicalTopic: submittedTopic });
       if (generatedQuestions && generatedQuestions.length > 0) {
@@ -105,6 +108,7 @@ export function VoiceMockupApp() {
             question={questions[currentQuestionIndex]}
             onAnswerSubmit={handleAnswerSubmit}
             isAnalyzing={isAnalyzing}
+            voice={voice}
           />
         );
 

@@ -9,31 +9,35 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const formSchema = z.object({
   topic: z.string().min(2, 'Topic must be at least 2 characters.').max(50, 'Topic is too long.'),
+  voice: z.enum(['Algenib', 'Achernar'], {
+    required_error: "You need to select a voice."
+  }),
 });
 
 type TopicFormProps = {
-  onSubmit: (topic: string) => void;
+  onSubmit: (topic: string, voice: 'Algenib' | 'Achernar') => void;
   isGenerating: boolean;
 };
 
 export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { topic: '' },
+    defaultValues: { topic: '', voice: 'Algenib' },
   });
 
   function handleSubmit(values: z.infer<typeof formSchema>) {
-    onSubmit(values.topic);
+    onSubmit(values.topic, values.voice);
   }
 
   return (
     <Card className="w-full max-w-lg animate-fade-in-up">
       <CardHeader>
         <CardTitle className="font-headline">Welcome to Voice Mockup</CardTitle>
-        <CardDescription>Enter a technical topic to start your mock interview.</CardDescription>
+        <CardDescription>Enter a technical topic and select a voice to start your mock interview.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -46,6 +50,40 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
                   <FormLabel>Technical Topic</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., React Hooks, Docker, Kubernetes" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="voice"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Interviewer Voice</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-col space-y-1"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="Algenib" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Interviewer Voice 1
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="Achernar" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Interviewer Voice 2
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

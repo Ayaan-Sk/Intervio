@@ -1,24 +1,37 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Mic, MicOff, Volume2 } from 'lucide-react';
+import { Loader2, Mic, Speaker } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { textToSpeech } from '@/app/actions';
+import type { InterviewVoice } from './voice-mockup-app';
 
 interface InterviewCardProps {
   question: string;
   onAnswerSubmit: (answer: string) => void;
   isAnalyzing: boolean;
+  voice: InterviewVoice;
 }
 
-export function InterviewCard({ question, onAnswerSubmit, isAnalyzing }: InterviewCardProps) {
+export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, voice }: InterviewCardProps) {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const startRecording = useCallback(() => {
+    if (recognitionRef.current && !isRecording) {
+      setTranscript('');
+      recognitionRef.current.start();
+      setIsRecording(true);
+    }
+  }, [isRecording]);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -60,31 +73,98 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing }: Intervi
     };
 
     recognitionRef.current = recognition;
-  }, [toast]);
 
-  const handleRecording = () => {
-    if (isRecording) {
+    // Cleanup on unmount
+    return () => {
       recognitionRef.current?.stop();
-    } else {
-      setTranscript('');
-      recognitionRef.current?.start();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
     }
-    setIsRecording(!isRecording);
-  };
+  }, [toast]);
   
-  const speak = (text: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      window.speechSynthesis.speak(utterance);
-    } else {
-      toast({ title: 'Text-to-speech not supported in this browser.' });
+
+  useEffect(() => {
+    if (question && voice) {
+      setIsSpeaking(true);
+      // Reset transcript for new question
+      setTranscript('');
+      textToSpeech({ text: question, voice })
+        .then(({ audioDataUri }) => {
+          const audio = new Audio(audioDataUri);
+          audioRef.current = audio;
+          audio.play();
+          audio.onended = () => {
+            setIsSpeaking(false);
+            startRecording();
+          };
+          audio.onerror = () => {
+            // Handle audio playback error
+             toast({
+                variant: 'destructive',
+                title: 'Audio Playback Error',
+                description: 'Could not play the question audio.',
+            });
+            setIsSpeaking(false);
+            startRecording();
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          toast({
+            variant: 'destructive',
+            title: 'Text-to-Speech Error',
+            description: 'Could not generate audio for the question.',
+          });
+          setIsSpeaking(false);
+          // Even if TTS fails, allow user to record
+          startRecording();
+        });
     }
-  };
+
+    return () => {
+        if(audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.src = '';
+        }
+        if(recognitionRef.current){
+            recognitionRef.current.stop();
+        }
+    }
+  }, [question, voice, toast, startRecording]);
+
 
   const handleSubmit = () => {
     if (transcript.trim()) {
+      recognitionRef.current?.stop();
       onAnswerSubmit(transcript);
     }
+  };
+
+  const getStatusMessage = () => {
+    if (isSpeaking) {
+      return (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="animate-spin" />
+          <span>Interviewer is speaking...</span>
+        </div>
+      )
+    }
+    if (isRecording) {
+      return (
+        <div className="flex items-center gap-2 text-red-500">
+          <Mic />
+          <span>Recording... Speak now.</span>
+        </div>
+      )
+    }
+    return (
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Speaker />
+        <span>Prepare to answer.</span>
+      </div>
+    );
   };
 
   return (
@@ -93,12 +173,9 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing }: Intervi
         <CardHeader>
           <CardTitle className="font-headline text-2xl">{question}</CardTitle>
         </CardHeader>
-        <CardFooter>
-          <Button variant="outline" onClick={() => speak(question)}>
-            <Volume2 className="mr-2 h-4 w-4" />
-            Read Aloud
-          </Button>
-        </CardFooter>
+        <CardContent>
+          {getStatusMessage()}
+        </CardContent>
       </Card>
 
       <Card>
@@ -112,13 +189,10 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing }: Intervi
             onChange={(e) => setTranscript(e.target.value)}
             rows={6}
             className="text-base"
+            disabled={isSpeaking}
           />
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button onClick={handleRecording} className="w-full sm:w-auto" variant={isRecording ? 'destructive' : 'default'}>
-              {isRecording ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
-              {isRecording ? 'Stop Recording' : 'Record Answer'}
-            </Button>
-            <Button onClick={handleSubmit} className="w-full sm:w-auto bg-accent hover:bg-accent/90" disabled={!transcript.trim() || isAnalyzing}>
+            <Button onClick={handleSubmit} className="w-full bg-accent hover:bg-accent/90" disabled={!transcript.trim() || isAnalyzing || isSpeaking}>
               {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {isAnalyzing ? 'Analyzing...' : 'Submit Answer'}
             </Button>
