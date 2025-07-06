@@ -74,14 +74,16 @@ const textToSpeechFlow = ai.defineFlow(
         prompt: input.text,
       });
 
-      if (!media) {
-        throw new Error('No audio media returned from TTS model.');
+      if (!media || !media.url || !media.url.includes(',')) {
+        throw new Error('Invalid or empty audio media returned from TTS model.');
       }
 
-      const audioBuffer = Buffer.from(
-        media.url.substring(media.url.indexOf(',') + 1),
-        'base64'
-      );
+      const b64Data = media.url.substring(media.url.indexOf(',') + 1);
+      if (!b64Data) {
+          throw new Error('Invalid audio data URI format from TTS model: base64 data not found.');
+      }
+
+      const audioBuffer = Buffer.from(b64Data, 'base64');
 
       const wavBase64 = await toWav(audioBuffer);
       

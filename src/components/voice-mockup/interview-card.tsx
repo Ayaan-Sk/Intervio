@@ -118,10 +118,11 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, voice }: 
         })
         .catch(err => {
           console.error(err);
+          const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
           toast({
             variant: 'destructive',
             title: 'Text-to-Speech Error',
-            description: 'Could not generate audio for the question.',
+            description: errorMessage,
           });
           setIsSpeaking(false);
           // Even if TTS fails, allow user to record

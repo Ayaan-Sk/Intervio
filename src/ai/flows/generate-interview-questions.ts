@@ -17,7 +17,7 @@ const GenerateInterviewQuestionsInputSchema = z.object({
 export type GenerateInterviewQuestionsInput = z.infer<typeof GenerateInterviewQuestionsInputSchema>;
 
 const GenerateInterviewQuestionsOutputSchema = z.object({
-  questions: z.array(z.string()).describe('An array of interview questions related to the technical topic.'),
+  questions: z.array(z.string().min(1, { message: "Generated question cannot be empty."})).describe('An array of interview questions related to the technical topic.'),
 });
 export type GenerateInterviewQuestionsOutput = z.infer<typeof GenerateInterviewQuestionsOutputSchema>;
 

@@ -80,6 +80,9 @@ export async function textToSpeech(
     return await tts(parsedInput.data);
   } catch (error) {
     console.error('Error in text to speech:', error);
-    throw new Error('Failed to generate audio. Please try again.');
+    if (error instanceof Error) {
+        throw new Error(error.message);
+    }
+    throw new Error('Failed to generate audio due to an unknown error.');
   }
 }
