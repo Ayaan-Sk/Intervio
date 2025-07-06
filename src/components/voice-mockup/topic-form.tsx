@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,14 +6,22 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const formSchema = z.object({
-  topic: z.string().min(2, 'Topic must be at least 2 characters.').max(50, 'Topic is too long.'),
+  topic: z.string({
+    required_error: 'Please select a topic.',
+  }),
   voice: z.enum(['male', 'female'], {
-    required_error: "You need to select a voice."
+    required_error: 'You need to select a voice.',
   }),
 });
 
@@ -26,7 +33,7 @@ type TopicFormProps = {
 export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { topic: '', voice: 'male' },
+    defaultValues: { voice: 'male' },
   });
 
   function handleSubmit(values: z.infer<typeof formSchema>) {
@@ -37,7 +44,9 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
     <Card className="w-full max-w-lg animate-fade-in-up">
       <CardHeader>
         <CardTitle className="font-headline">Welcome to Voice Mockup</CardTitle>
-        <CardDescription>Enter a technical topic and select a voice to start your mock interview.</CardDescription>
+        <CardDescription>
+          Select a technical topic and a voice to start your mock interview.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -48,9 +57,19 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Technical Topic</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., React Hooks, Docker, Kubernetes" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a topic for the interview" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="react">React</SelectItem>
+                      <SelectItem value="docker">Docker</SelectItem>
+                      <SelectItem value="kubernetes">Kubernetes</SelectItem>
+                      <SelectItem value="general">General</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -71,17 +90,13 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
                         <FormControl>
                           <RadioGroupItem value="male" />
                         </FormControl>
-                        <FormLabel className="font-normal">
-                          Male Voice
-                        </FormLabel>
+                        <FormLabel className="font-normal">Male Voice</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
                           <RadioGroupItem value="female" />
                         </FormControl>
-                        <FormLabel className="font-normal">
-                          Female Voice
-                        </FormLabel>
+                        <FormLabel className="font-normal">Female Voice</FormLabel>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
@@ -91,7 +106,7 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
             />
             <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={isGenerating}>
               {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {isGenerating ? 'Generating Questions...' : 'Start Interview'}
+              {isGenerating ? 'Preparing Interview...' : 'Start Interview'}
             </Button>
           </form>
         </Form>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -35,7 +34,7 @@ const DUMMY_QUESTIONS: Record<string, string[]> = {
     'What is a Pod in Kubernetes?',
     'Describe the difference between a Deployment and a StatefulSet in Kubernetes.',
   ],
-  'default': [
+  'general': [
     'Tell me about a challenging technical problem you solved recently.',
     'How do you approach learning a new technology or programming language?',
     'Describe your experience with version control systems like Git.',
@@ -58,11 +57,8 @@ export function VoiceMockupApp() {
     setTopic(submittedTopic);
     setVoice(selectedVoice);
 
-    const topicKey = Object.keys(DUMMY_QUESTIONS).find(key => 
-      submittedTopic.toLowerCase().includes(key) && key !== 'default'
-    );
+    const questionPool = DUMMY_QUESTIONS[submittedTopic] || DUMMY_QUESTIONS['general'];
     
-    const questionPool = topicKey ? DUMMY_QUESTIONS[topicKey] : DUMMY_QUESTIONS['default'];
     // Using an array with one question to simulate a shorter interview and avoid API rate limits on analysis.
     const selectedQuestion = questionPool[Math.floor(Math.random() * questionPool.length)];
 
