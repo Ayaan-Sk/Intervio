@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { analyzeAnswerQuality } from '@/app/actions';
 import { TopicForm } from './topic-form';
 import { InterviewCard } from './interview-card';
 import { FeedbackCard } from './feedback-card';
@@ -116,6 +115,9 @@ export function VoiceMockupApp() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
+  const [currentAnalysisResult, setCurrentAnalysisResult] = useState<Omit<AnalysisResult, 'justification'> | null>(null);
+  const [streamedJustification, setStreamedJustification] = useState('');
+
   const handleTopicSubmit = (submittedTopics: string[], selectedVoice: InterviewVoice) => {
     setIsGenerating(true);
     setTopics(submittedTopics);
@@ -123,33 +125,82 @@ export function VoiceMockupApp() {
 
     const questionPool = submittedTopics.flatMap(topic => DUMMY_QUESTIONS[topic] || []);
     
-    // Select 3 random questions from the pool without repetition
     const shuffled = [...questionPool].sort(() => 0.5 - Math.random());
     const selectedQuestions = shuffled.slice(0, 3);
 
     setQuestions(selectedQuestions);
     setStep('interview');
     
-    // Using a timeout to make the UI transition feel smoother
     setTimeout(() => setIsGenerating(false), 300);
   };
 
   const handleAnswerSubmit = async (answer: string) => {
     setIsAnalyzing(true);
+    setCurrentAnalysisResult(null);
+    setStreamedJustification('');
+  
     try {
-      const analysis = await analyzeAnswerQuality({
-        question: questions[currentQuestionIndex],
-        answer,
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: questions[currentQuestionIndex],
+          answer,
+        }),
       });
-      setResults(prev => [...prev, { ...analysis, answer }]);
-      setStep('feedback');
+  
+      if (!response.ok || !response.body) {
+        throw new Error(`Analysis request failed with status ${response.status}`);
+      }
+      
+      setStep('feedback'); 
+  
+      const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+      let buffer = '';
+      let staticAnalysisDone = false;
+      let staticResult: Omit<AnalysisResult, 'justification' | 'answer'>;
+      
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          if (staticResult) {
+            const finalResult: AnalysisResult = {
+              ...staticResult,
+              justification: streamedJustification,
+              answer: answer,
+            };
+            setResults(prev => [...prev, finalResult]);
+          }
+          setIsAnalyzing(false);
+          break;
+        }
+  
+        buffer += value;
+        
+        if (!staticAnalysisDone && buffer.includes('\n---\n')) {
+          const parts = buffer.split('\n---\n');
+          const staticJson = parts[0];
+          staticResult = JSON.parse(staticJson);
+          setCurrentAnalysisResult({ ...staticResult, answer });
+          
+          buffer = parts[1] || '';
+          staticAnalysisDone = true;
+        }
+  
+        if (staticAnalysisDone) {
+          setStreamedJustification(prev => prev + buffer);
+          buffer = '';
+        }
+      }
+  
     } catch (error) {
+      console.error('Error analyzing answer:', error);
       toast({
         variant: 'destructive',
         title: 'Analysis Failed',
         description: 'There was an error analyzing your answer. Please try again.',
       });
-    } finally {
+      setStep('interview');
       setIsAnalyzing(false);
     }
   };
@@ -187,11 +238,16 @@ export function VoiceMockupApp() {
         );
 
       case 'feedback':
-        const lastResult = results[results.length - 1];
         return (
           <div className="w-full max-w-2xl space-y-6 animate-fade-in">
-              {lastResult && <FeedbackCard result={lastResult} />}
-              <Button onClick={handleNext} className="w-full">
+              {currentAnalysisResult && (
+                <FeedbackCard 
+                  result={currentAnalysisResult} 
+                  justification={streamedJustification}
+                  isAnalyzing={isAnalyzing}
+                />
+              )}
+              <Button onClick={handleNext} className="w-full" disabled={isAnalyzing}>
                 {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Interview'}
               </Button>
           </div>

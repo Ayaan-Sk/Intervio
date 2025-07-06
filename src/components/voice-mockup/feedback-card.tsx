@@ -11,15 +11,16 @@ interface AnalysisResult {
   sentiment: string;
   qualityRating: number;
   talkingPoints: string[];
-  justification: string;
   answer: string;
 }
 
 interface FeedbackCardProps {
   result: AnalysisResult;
+  justification: string;
+  isAnalyzing: boolean;
 }
 
-export function FeedbackCard({ result }: FeedbackCardProps) {
+export function FeedbackCard({ result, justification, isAnalyzing }: FeedbackCardProps) {
   const sentimentVariant = (sentiment: string) => {
     switch (sentiment.toLowerCase()) {
       case 'positive':
@@ -58,7 +59,7 @@ export function FeedbackCard({ result }: FeedbackCardProps) {
         
         <div>
           <h3 className="font-semibold mb-2">Justification</h3>
-          <p className="text-muted-foreground">{result.justification}</p>
+          <p className="text-muted-foreground whitespace-pre-wrap">{justification}{isAnalyzing && <span className="inline-block w-2 h-4 bg-foreground animate-pulse ml-1" />}</p>
         </div>
 
         <Separator />

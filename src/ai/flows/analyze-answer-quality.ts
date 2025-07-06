@@ -21,7 +21,6 @@ const AnalyzeAnswerQualityOutputSchema = z.object({
   sentiment: z.string().describe('The overall sentiment of the answer (e.g., positive, negative, neutral).'),
   qualityRating: z.number().describe('A rating of the answer quality on a scale of 1 to 5, with 5 being the highest quality.'),
   talkingPoints: z.array(z.string()).describe('Key talking points extracted from the answer.'),
-  justification: z.string().describe('A detailed justification for the assigned quality rating.'),
 });
 export type AnalyzeAnswerQualityOutput = z.infer<typeof AnalyzeAnswerQualityOutputSchema>;
 
@@ -38,7 +37,7 @@ const analyzeAnswerQualityPrompt = ai.definePrompt({
 Question: {{{question}}}
 Answer: {{{answer}}}
 
-Determine the sentiment of the answer, rate the quality of the answer on a scale of 1 to 5 (where 5 is excellent), extract the key talking points, and provide a justification for the quality rating.
+Determine the sentiment of the answer, rate the quality of the answer on a scale of 1 to 5 (where 5 is excellent), and extract the key talking points.
 
 Output in JSON format:
 ${JSON.stringify(AnalyzeAnswerQualityOutputSchema.shape, null, 2)}`,
