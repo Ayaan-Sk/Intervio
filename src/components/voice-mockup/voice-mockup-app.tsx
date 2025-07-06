@@ -77,7 +77,7 @@ export function VoiceMockupApp() {
             setTtsCache(prev => ({ ...prev, [cacheKey]: response.audioDataUri }));
             setCurrentAudioSrc(response.audioDataUri);
           } else {
-            throw new Error('No audio data URI in response');
+            throw new Error(response.error || 'No audio data URI in response');
           }
         } catch (error) {
           console.error("Failed to get TTS audio", error);
@@ -86,6 +86,7 @@ export function VoiceMockupApp() {
             title: 'Text-to-Speech Failed',
             description: 'Could not play audio. Recording will start now.',
           });
+          setTtsCache(prev => ({...prev, [cacheKey]: 'error'}));
           setCurrentAudioSrc('error');
         } finally {
           setIsReadingQuestion(false);
@@ -93,7 +94,7 @@ export function VoiceMockupApp() {
       };
       fetchAudio();
     }
-  }, [step, currentQuestionIndex, questions, voice, toast]);
+  }, [step, currentQuestionIndex, questions, voice, toast, ttsCache]);
 
   const handleTopicSubmit = (submittedTopic: string, selectedVoice: InterviewVoice) => {
     setIsGenerating(true);

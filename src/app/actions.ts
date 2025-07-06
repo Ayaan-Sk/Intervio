@@ -52,8 +52,8 @@ export async function textToSpeech(
   } catch (error) {
     console.error('Error in text to speech:', error);
     if (error instanceof Error) {
-        throw new Error(error.message);
+        return { error: error.message };
     }
-    throw new Error('Failed to generate audio due to an unknown error.');
+    return { error: 'Failed to generate audio due to an unknown error.' };
   }
 }
