@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeAnswerQuality } from '@/ai/flows/analyze-answer-quality';
 import { generateInterviewQuestions } from '@/ai/flows/generate-interview-questions';
-import { ai } from '@/ai/genkit';
 
 
 interface AnalysisResult {
@@ -75,28 +74,10 @@ export function VoiceMockupApp() {
     setIsAnalyzing(true);
     try {
       const question = questions[currentQuestionIndex];
-      const staticAnalysis = await analyzeAnswerQuality({ question, answer });
-
-      const justificationPrompt = `
-        You are an expert interview analyst. You have analyzed a candidate's answer to a question.
-        Your analysis produced the following data:
-        - Question: "${question}"
-        - Candidate's Answer: "${answer}"
-        - Quality Rating: ${staticAnalysis.qualityRating} out of 5
-        - Sentiment: ${staticAnalysis.sentiment}
-        - Key Talking Points: ${staticAnalysis.talkingPoints.join(', ')}
-
-        Now, provide a detailed, conversational justification for this analysis. Explain why you gave the rating you did, referencing the talking points and the candidate's answer. Speak directly to the candidate.
-      `;
-
-      const { text } = await ai.generate({
-        prompt: justificationPrompt,
-        model: 'googleai/gemini-2.0-flash',
-      });
+      const analysisResult = await analyzeAnswerQuality({ question, answer });
       
       const finalResult: AnalysisResult = {
-        ...staticAnalysis,
-        justification: text,
+        ...analysisResult,
         answer,
       };
 

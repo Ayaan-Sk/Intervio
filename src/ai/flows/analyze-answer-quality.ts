@@ -21,6 +21,7 @@ const AnalyzeAnswerQualityOutputSchema = z.object({
   sentiment: z.string().describe('The overall sentiment of the answer (e.g., positive, negative, neutral).'),
   qualityRating: z.number().describe('A rating of the answer quality on a scale of 1 to 5, with 5 being the highest quality.'),
   talkingPoints: z.array(z.string()).describe('Key talking points extracted from the answer.'),
+  justification: z.string().describe("A detailed, conversational justification for the analysis, explaining the rating and referencing talking points.")
 });
 export type AnalyzeAnswerQualityOutput = z.infer<typeof AnalyzeAnswerQualityOutputSchema>;
 
@@ -38,6 +39,7 @@ Question: {{{question}}}
 Answer: {{{answer}}}
 
 Determine the sentiment of the answer, rate the quality of the answer on a scale of 1 to 5 (where 5 is excellent), and extract the key talking points.
+Then, provide a detailed, conversational justification for this analysis. Explain why you gave the rating you did, referencing the talking points and the candidate's answer. Speak directly to the candidate.
 
 Output in JSON format:
 ${JSON.stringify(AnalyzeAnswerQualityOutputSchema.shape, null, 2)}`,
