@@ -72,11 +72,30 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
       }
     };
     
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      let errorMessage = `An unknown error occurred: ${event.error}. Please try again.`;
+      switch (event.error) {
+        case 'no-speech':
+          errorMessage = 'No speech was detected. Please make sure your microphone is working and you are speaking clearly.';
+          break;
+        case 'audio-capture':
+          errorMessage = 'Microphone not available. Please ensure it is connected and enabled in your system settings.';
+          break;
+        case 'not-allowed':
+          errorMessage = 'Microphone access was denied. Please allow microphone access in your browser settings to use this feature.';
+          break;
+        case 'network':
+          errorMessage = 'A network error occurred during speech recognition. Please check your internet connection.';
+          break;
+        case 'aborted':
+          // This is a normal event when stopping recording, so we don't need to show an error.
+          return;
+      }
+
       toast({
         variant: 'destructive',
         title: 'Speech Recognition Error',
-        description: `Error: ${event.error}. Please ensure microphone access is allowed.`,
+        description: errorMessage,
       });
       setIsRecording(false);
     };
