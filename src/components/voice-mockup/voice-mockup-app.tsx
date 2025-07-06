@@ -65,7 +65,7 @@ export function VoiceMockupApp() {
     const questionPool = topicKey ? DUMMY_QUESTIONS[topicKey] : DUMMY_QUESTIONS['default'];
     const selectedQuestion = questionPool[Math.floor(Math.random() * questionPool.length)];
 
-    setQuestions([selectedQuestion]); // Using an array with one question for now
+    setQuestions([selectedQuestion]); // Using an array with one question to avoid API rate limits.
     setStep('interview');
     
     // Using a timeout to make the UI transition feel smoother
@@ -120,7 +120,6 @@ export function VoiceMockupApp() {
             question={questions[currentQuestionIndex]}
             onAnswerSubmit={handleAnswerSubmit}
             isAnalyzing={isAnalyzing}
-            voice={voice}
           />
         );
 

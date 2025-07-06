@@ -7,23 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Mic, Speaker } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { textToSpeech } from '@/app/actions';
-import type { InterviewVoice } from './voice-mockup-app';
 
 interface InterviewCardProps {
   question: string;
   onAnswerSubmit: (answer: string) => void;
   isAnalyzing: boolean;
-  voice: InterviewVoice;
 }
 
-export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, voice }: InterviewCardProps) {
+export function InterviewCard({ question, onAnswerSubmit, isAnalyzing }: InterviewCardProps) {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const startRecording = useCallback(() => {
     if (recognitionRef.current && !isRecording) {
@@ -31,8 +26,7 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, voice }: 
       try {
         recognitionRef.current.start();
       } catch (e) {
-        // This error can happen if recognition is already started, e.g. due to a quick re-render.
-        // We'll log it and proceed, as the desired state (recording) is or will be active.
+        // This error can happen if recognition is already started.
         console.warn('Speech recognition could not be started, may already be active.', e);
       }
       setIsRecording(true);
@@ -83,63 +77,24 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, voice }: 
     // Cleanup on unmount
     return () => {
       recognitionRef.current?.stop();
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
     }
   }, [toast]);
   
 
   useEffect(() => {
-    if (question && voice) {
-      setIsSpeaking(true);
-      // Reset transcript for new question
+    if (question) {
       setTranscript('');
-      textToSpeech({ text: question, voice })
-        .then(({ audioDataUri }) => {
-          const audio = new Audio(audioDataUri);
-          audioRef.current = audio;
-          audio.play();
-          audio.onended = () => {
-            setIsSpeaking(false);
-            startRecording();
-          };
-          audio.onerror = () => {
-            // Handle audio playback error
-             toast({
-                variant: 'destructive',
-                title: 'Audio Playback Error',
-                description: 'Could not play the question audio.',
-            });
-            setIsSpeaking(false);
-            startRecording();
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-          toast({
-            variant: 'destructive',
-            title: 'Text-to-Speech Error',
-            description: errorMessage,
-          });
-          setIsSpeaking(false);
-          // Even if TTS fails, allow user to record
-          startRecording();
-        });
+      // To prevent API rate limit errors, the text-to-speech functionality
+      // has been temporarily disabled. Recording starts automatically.
+      startRecording();
     }
 
     return () => {
-        if(audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.src = '';
-        }
         if(recognitionRef.current){
             recognitionRef.current.stop();
         }
     }
-  }, [question, voice, toast, startRecording]);
+  }, [question, startRecording]);
 
 
   const handleSubmit = () => {
@@ -150,14 +105,6 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, voice }: 
   };
 
   const getStatusMessage = () => {
-    if (isSpeaking) {
-      return (
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="animate-spin" />
-          <span>Interviewer is speaking...</span>
-        </div>
-      )
-    }
     if (isRecording) {
       return (
         <div className="flex items-center gap-2 text-red-500">
@@ -169,7 +116,7 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, voice }: 
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
         <Speaker />
-        <span>Prepare to answer.</span>
+        <span>Prepare to answer. Recording starts automatically.</span>
       </div>
     );
   };
@@ -196,10 +143,9 @@ export function InterviewCard({ question, onAnswerSubmit, isAnalyzing, voice }: 
             onChange={(e) => setTranscript(e.target.value)}
             rows={6}
             className="text-base"
-            disabled={isSpeaking}
           />
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button onClick={handleSubmit} className="w-full bg-accent hover:bg-accent/90" disabled={!transcript.trim() || isAnalyzing || isSpeaking}>
+            <Button onClick={handleSubmit} className="w-full bg-accent hover:bg-accent/90" disabled={!transcript.trim() || isAnalyzing}>
               {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {isAnalyzing ? 'Analyzing...' : 'Submit Answer'}
             </Button>
