@@ -13,13 +13,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const formSchema = z.object({
   topic: z.string().min(2, 'Topic must be at least 2 characters.').max(50, 'Topic is too long.'),
-  voice: z.enum(['Algenib', 'Achernar'], {
+  voice: z.enum(['Algenib', 'Electra'], {
     required_error: "You need to select a voice."
   }),
 });
 
 type TopicFormProps = {
-  onSubmit: (topic: string, voice: 'Algenib' | 'Achernar') => void;
+  onSubmit: (topic: string, voice: 'Algenib' | 'Electra') => void;
   isGenerating: boolean;
 };
 
@@ -72,15 +72,15 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
                           <RadioGroupItem value="Algenib" />
                         </FormControl>
                         <FormLabel className="font-normal">
-                          Interviewer Voice 1
+                          Male Voice
                         </FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value="Achernar" />
+                          <RadioGroupItem value="Electra" />
                         </FormControl>
                         <FormLabel className="font-normal">
-                          Interviewer Voice 2
+                          Female Voice
                         </FormLabel>
                       </FormItem>
                     </RadioGroup>

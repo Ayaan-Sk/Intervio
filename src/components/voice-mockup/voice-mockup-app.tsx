@@ -20,7 +20,7 @@ interface AnalysisResult {
 }
 
 type Step = 'topic' | 'interview' | 'feedback' | 'summary';
-export type InterviewVoice = 'Algenib' | 'Achernar';
+export type InterviewVoice = 'Algenib' | 'Electra';
 
 export function VoiceMockupApp() {
   const { toast } = useToast();

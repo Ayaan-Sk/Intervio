@@ -29,7 +29,7 @@ const answerSchema = z.object({
 
 const ttsSchema = z.object({
   text: z.string(),
-  voice: z.enum(['Algenib', 'Achernar']),
+  voice: z.enum(['Algenib', 'Electra']),
 });
 
 export async function generateInterviewQuestions(
