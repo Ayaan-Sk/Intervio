@@ -61,15 +61,11 @@ export function InterviewCard({ question, audioDataUri, onAnswerSubmit, isAnalyz
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        }
-      }
-      if (finalTranscript) {
-        setTranscript((prev) => prev + finalTranscript.trim() + ' ');
-      }
+      const fullTranscript = Array.from(event.results)
+        .map((result) => result[0])
+        .map((result) => result.transcript)
+        .join('');
+      setTranscript(fullTranscript);
     };
     
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
