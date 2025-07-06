@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -8,6 +9,10 @@ import { InterviewSummary } from './interview-summary';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { analyzeAnswerQuality } from '@/ai/flows/analyze-answer-quality';
+import { generateInterviewQuestions } from '@/ai/flows/generate-interview-questions';
+import { ai } from '@/ai/genkit';
+
 
 interface AnalysisResult {
   sentiment: string;
@@ -20,90 +25,6 @@ interface AnalysisResult {
 type Step = 'topic' | 'interview' | 'feedback' | 'summary';
 export type InterviewVoice = 'male' | 'female';
 
-const DUMMY_QUESTIONS: Record<string, string[]> = {
-  'react': [
-    'What is React and why is it used?',
-    'What are components in React?',
-    'What is the difference between props and state?',
-    'What is JSX?',
-    'What are functional and class components?',
-    'How does the Virtual DOM work in React?',
-    'What is the purpose of keys in a list?',
-    'What is a controlled component in React?',
-    'How does React handle form inputs?',
-    'What are React hooks?',
-    'What does the useState hook do?',
-    'What is the useEffect hook used for?',
-    'What is prop drilling and how can it be avoided?',
-    'What are fragments in React?',
-    'How do you conditionally render components in React?',
-    'What is the purpose of useRef?',
-    'How do you handle side effects in React?',
-    'What is the Context API and when would you use it?',
-    'What are custom hooks and why are they useful?',
-    'What is the difference between useMemo and useCallback?',
-    'What is reconciliation in React?',
-    'What are Higher Order Components (HOCs)?',
-    'What is lazy loading in React and how is it implemented?',
-    'What is code splitting?',
-    'How does React optimize performance during re-renders?',
-    'What are pure components?',
-    'How does React differ from other frameworks like Angular or Vue?',
-    'What is React Router and how does it work?',
-    'How do you pass parameters in React Router?',
-    'What are the differences between useEffect and componentDidMount?',
-    'What is Redux and why is it used with React?',
-    'What are actions, reducers, and the store in Redux?',
-    'What is the difference between Redux and Context API?',
-    'What are middleware in Redux?',
-    'What is the useReducer hook?',
-    'How do you deploy a React application?',
-    'What is Create React App (CRA)?',
-    'What is the difference between CRA and Vite?',
-    'How can you improve performance in a large React application?',
-    'What is tree shaking?',
-    'How do you secure a React app?',
-    'What are common React anti-patterns to avoid?',
-    'How can you handle errors in React components?',
-    'What is the purpose of error boundaries?',
-    'What is Server-Side Rendering (SSR) in React?',
-    'What is hydration in React?',
-    'How does React handle accessibility (a11y)?',
-    'How can you test a React component?',
-    'What is snapshot testing?',
-    'What are best practices for structuring a scalable React project?',
-  ],
-  'docker': [
-    'What is a Docker container, and how does it differ from a virtual machine?',
-    'Explain the purpose of a Dockerfile. What are some common instructions you would use in one?',
-  ],
-  'kubernetes': [
-    'What is a Pod in Kubernetes?',
-    'Describe the difference between a Deployment and a StatefulSet in Kubernetes.',
-  ],
-  'general': [
-    'Tell me about a challenging technical problem you solved recently.',
-    'How do you approach learning a new technology or programming language?',
-    'Describe your experience with version control systems like Git.',
-  ],
-  'javascript': ['What is a closure in JavaScript?'],
-  'typescript': ['What is the difference between an interface and a type in TypeScript?'],
-  'python': ['Explain the difference between a list and a tuple in Python.'],
-  'java': ['What is the difference between `==` and `.equals()` in Java?'],
-  'c++': ['What is a virtual function in C++?'],
-  'c#': ['What is the Common Language Runtime (CLR) in .NET?'],
-  'go': ['What are goroutines and how do they differ from threads?'],
-  'rust': ['What is the ownership model in Rust?'],
-  'swift': ['What is the difference between a class and a struct in Swift?'],
-  'kotlin': ['What are extension functions in Kotlin?'],
-  'ruby': ['What is the difference between a block, a proc, and a lambda in Ruby?'],
-  'php': ['What are Traits in PHP?'],
-  'scala': ['What is a case class in Scala?'],
-  'sql': ['What is the difference between `UNION` and `UNION ALL`?'],
-  'html': ['What is the purpose of the `<!DOCTYPE html>` declaration?'],
-  'css': ['What is the CSS box model?'],
-};
-
 export function VoiceMockupApp() {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>('topic');
@@ -115,84 +36,72 @@ export function VoiceMockupApp() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
-  const [currentAnalysisResult, setCurrentAnalysisResult] = useState<Omit<AnalysisResult, 'justification'> | null>(null);
-  const [streamedJustification, setStreamedJustification] = useState('');
-
-  const handleTopicSubmit = (submittedTopics: string[], selectedVoice: InterviewVoice) => {
+  const handleTopicSubmit = async (submittedTopics: string[], selectedVoice: InterviewVoice) => {
     setIsGenerating(true);
     setTopics(submittedTopics);
     setVoice(selectedVoice);
 
-    const questionPool = submittedTopics.flatMap(topic => DUMMY_QUESTIONS[topic] || []);
-    
-    const shuffled = [...questionPool].sort(() => 0.5 - Math.random());
-    const selectedQuestions = shuffled.slice(0, 3);
+    try {
+      const { questions: generatedQuestions } = await generateInterviewQuestions({ topics: submittedTopics });
+      
+      if (!generatedQuestions || generatedQuestions.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Question Generation Failed',
+          description: 'Could not generate questions. Please try again.',
+        });
+        setIsGenerating(false);
+        return;
+      }
 
-    setQuestions(selectedQuestions);
-    setStep('interview');
-    
-    setTimeout(() => setIsGenerating(false), 300);
+      setQuestions(generatedQuestions);
+      setCurrentQuestionIndex(0);
+      setResults([]);
+      setStep('interview');
+
+    } catch (error) {
+      console.error('Error generating questions:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Question Generation Failed',
+        description: 'There was an error preparing your interview. Please try again.',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleAnswerSubmit = async (answer: string) => {
     setIsAnalyzing(true);
-    setCurrentAnalysisResult(null);
-    setStreamedJustification('');
-  
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: questions[currentQuestionIndex],
-          answer,
-        }),
+      const question = questions[currentQuestionIndex];
+      const staticAnalysis = await analyzeAnswerQuality({ question, answer });
+
+      const justificationPrompt = `
+        You are an expert interview analyst. You have analyzed a candidate's answer to a question.
+        Your analysis produced the following data:
+        - Question: "${question}"
+        - Candidate's Answer: "${answer}"
+        - Quality Rating: ${staticAnalysis.qualityRating} out of 5
+        - Sentiment: ${staticAnalysis.sentiment}
+        - Key Talking Points: ${staticAnalysis.talkingPoints.join(', ')}
+
+        Now, provide a detailed, conversational justification for this analysis. Explain why you gave the rating you did, referencing the talking points and the candidate's answer. Speak directly to the candidate.
+      `;
+
+      const { text } = await ai.generate({
+        prompt: justificationPrompt,
+        model: 'googleai/gemini-2.0-flash',
       });
-  
-      if (!response.ok || !response.body) {
-        throw new Error(`Analysis request failed with status ${response.status}`);
-      }
       
-      setStep('feedback'); 
-  
-      const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-      let buffer = '';
-      let staticAnalysisDone = false;
-      let staticResult: Omit<AnalysisResult, 'justification' | 'answer'>;
-      
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-          if (staticResult) {
-            const finalResult: AnalysisResult = {
-              ...staticResult,
-              justification: streamedJustification,
-              answer: answer,
-            };
-            setResults(prev => [...prev, finalResult]);
-          }
-          setIsAnalyzing(false);
-          break;
-        }
-  
-        buffer += value;
-        
-        if (!staticAnalysisDone && buffer.includes('\n---\n')) {
-          const parts = buffer.split('\n---\n');
-          const staticJson = parts[0];
-          staticResult = JSON.parse(staticJson);
-          setCurrentAnalysisResult({ ...staticResult, answer });
-          
-          buffer = parts[1] || '';
-          staticAnalysisDone = true;
-        }
-  
-        if (staticAnalysisDone) {
-          setStreamedJustification(prev => prev + buffer);
-          buffer = '';
-        }
-      }
-  
+      const finalResult: AnalysisResult = {
+        ...staticAnalysis,
+        justification: text,
+        answer,
+      };
+
+      setResults(prev => [...prev, finalResult]);
+      setStep('feedback');
     } catch (error) {
       console.error('Error analyzing answer:', error);
       toast({
@@ -200,7 +109,7 @@ export function VoiceMockupApp() {
         title: 'Analysis Failed',
         description: 'There was an error analyzing your answer. Please try again.',
       });
-      setStep('interview');
+    } finally {
       setIsAnalyzing(false);
     }
   };
@@ -238,17 +147,12 @@ export function VoiceMockupApp() {
         );
 
       case 'feedback':
+        const latestResult = results[currentQuestionIndex];
         return (
           <div className="w-full max-w-2xl space-y-6 animate-fade-in">
-              {currentAnalysisResult && (
-                <FeedbackCard 
-                  result={currentAnalysisResult} 
-                  justification={streamedJustification}
-                  isAnalyzing={isAnalyzing}
-                />
-              )}
+              {latestResult && <FeedbackCard result={latestResult} />}
               <Button onClick={handleNext} className="w-full" disabled={isAnalyzing}>
-                {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Interview'}
+                {isAnalyzing ? <span className="animate-pulse">Analyzing...</span> : currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Interview'}
               </Button>
           </div>
         );
