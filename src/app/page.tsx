@@ -22,7 +22,6 @@ export default function LandingPage() {
           <Logo />
           <nav className="hidden md:flex gap-6 items-center">
             <Link href="#features" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Features</Link>
-            <Link href="#testimonials" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Testimonials</Link>
           </nav>
           <Button asChild>
             <Link href="/app">Start Interview</Link>
@@ -96,7 +95,9 @@ export default function LandingPage() {
               <p className="text-muted-foreground mb-6">
                 Our platform has helped clients reduce hiring time by up to 40%, increased interview accuracy by 30%, and brought a 20% improvement in employee retention rates.
               </p>
-              <Button variant="outline">Learn More <ArrowRight className="ml-2 h-4 w-4" /></Button>
+              <Button variant="outline" asChild>
+                <Link href="/app?tab=resume">Resume Analyze <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
             </div>
             <div className="grid grid-cols-2 gap-6">
               <Card className="bg-primary text-primary-foreground p-6 text-center">
@@ -115,37 +116,6 @@ export default function LandingPage() {
                 <h4 className="text-3xl font-bold text-primary">20%</h4>
                 <p className="text-sm text-muted-foreground">Employee Retention</p>
               </Card>
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials Section */}
-        <section id="testimonials" className="py-20 bg-secondary">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">More than 1,000 Users Trust This Product</h2>
-            <p className="max-w-2xl mx-auto text-muted-foreground mb-12">Let our users tell you how they feel about their experiences using Intervio in their benefit-driven hiring platform.</p>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
-              {[
-                { name: 'Sarah Johnson', title: 'HR Manager', quote: 'Intervio transformed our hiring. The AI assessments are spot-on, and we\'ve saved countless hours.', image: 'https://placehold.co/100x100.png', hint: 'woman portrait' },
-                { name: 'Michael Chen', title: 'Tech Lead', quote: 'The real-time feedback is a game-changer. We can assess technical skills much more effectively now.', image: 'https://placehold.co/100x100.png', hint: 'man portrait' },
-                { name: 'Emily White', title: 'Recruiter', quote: 'I was amazed at how easy it was to set up and use. My candidate experience scores have never been higher.', image: 'https://placehold.co/100x100.png', hint: 'woman portrait' },
-                { name: 'David Lee', title: 'Startup Founder', quote: 'As a small company, every hire is critical. Intervio gives us the confidence that we\'re making the right choice.', image: 'https://placehold.co/100x100.png', hint: 'man portrait' },
-                { name: 'Jessica Rodriguez', title: 'Head of Talent', quote: 'The data-driven insights are invaluable. We can now back up our hiring decisions with concrete evidence.', image: 'https://placehold.co/100x100.png', hint: 'woman portrait' },
-                { name: 'Kevin Martinez', title: 'Engineering Director', quote: 'The consistency and fairness that Intervio brings to our process is exactly what we needed to scale our team.', image: 'https://placehold.co/100x100.png', hint: 'man portrait' },
-              ].map((testimonial, index) => (
-                <Card key={index} className="p-6">
-                  <CardContent className="p-0">
-                    <div className="flex items-center mb-4">
-                      <Image src={testimonial.image} alt={testimonial.name} data-ai-hint={testimonial.hint} width={48} height={48} className="rounded-full mr-4" />
-                      <div>
-                        <p className="font-bold">{testimonial.name}</p>
-                        <p className="text-sm text-muted-foreground">{testimonial.title}</p>
-                      </div>
-                    </div>
-                    <p className="text-muted-foreground">"{testimonial.quote}"</p>
-                  </CardContent>
-                </Card>
-              ))}
             </div>
           </div>
         </section>
@@ -189,7 +159,6 @@ export default function LandingPage() {
               <ul className="space-y-2 text-sm">
                 <li><Link href="#" className="hover:text-white">About Us</Link></li>
                 <li><Link href="#" className="hover:text-white">Features</Link></li>
-                <li><Link href="#" className="hover:text-white">Testimonial</Link></li>
                 <li><Link href="#" className="hover:text-white">Contact Us</Link></li>
               </ul>
             </div>
