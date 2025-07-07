@@ -138,7 +138,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="hidden md:block">
-              <Image src="https://placehold.co/600x600.png" alt="Happy woman with headphones" data-ai-hint="woman headphones" width={500} height={500} className="rounded-full shadow-2xl" />
+              <Image src="https://fireworks-dev-preview.appspot.com/v1/projects/studio-e2e-project/locations/us-central1/buckets/user-public-assets/objects/IStO9b7QZk.jpg" alt="Happy woman with headphones" data-ai-hint="woman headphones" width={500} height={500} className="rounded-full shadow-2xl object-cover w-[500px] h-[500px]" />
             </div>
           </div>
         </section>
