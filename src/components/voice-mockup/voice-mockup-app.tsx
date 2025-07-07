@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TopicForm } from './topic-form';
 import { InterviewCard } from './interview-card';
 import { FeedbackCard } from './feedback-card';
@@ -34,11 +34,35 @@ export function VoiceMockupApp() {
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(15 * 60);
+
+  useEffect(() => {
+    if (step !== 'interview' && step !== 'feedback') {
+        if (timeLeft !== 15 * 60) setTimeLeft(15 * 60); // Reset timer if not in interview
+        return;
+    };
+
+    if (timeLeft <= 0) {
+      toast({
+        title: "Time's Up!",
+        description: 'Moving to the summary.',
+      });
+      setStep('summary');
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setTimeLeft(t => t - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [step, timeLeft, toast]);
   
   const handleTopicSubmit = async (submittedTopics: string[], selectedVoice: InterviewVoice) => {
     setIsGenerating(true);
     setTopics(submittedTopics);
     setVoice(selectedVoice);
+    setTimeLeft(15 * 60); // Reset timer
 
     try {
       const { questions: generatedQuestions } = await generateInterviewQuestions({ topics: submittedTopics });
@@ -121,9 +145,14 @@ export function VoiceMockupApp() {
         return (
           <InterviewCard
             question={questions[currentQuestionIndex]}
+            topics={topics}
             voice={voice}
             onAnswerSubmit={handleAnswerSubmit}
             isAnalyzing={isAnalyzing}
+            currentQuestionIndex={currentQuestionIndex}
+            totalQuestions={questions.length}
+            timeLeft={timeLeft}
+            onLeave={handleRestart}
           />
         );
 
@@ -146,9 +175,13 @@ export function VoiceMockupApp() {
     }
   };
 
+  const containerClass = (step === 'interview')
+    ? "w-full py-4 px-4 flex flex-col items-center"
+    : "container mx-auto py-8 px-4 flex flex-col items-center gap-8";
+
   return (
-    <div className="container mx-auto py-8 px-4 flex flex-col items-center gap-8">
-      {(step === 'interview' || step === 'feedback') && questions.length > 0 && (
+    <div className={containerClass}>
+      {(step === 'feedback') && questions.length > 0 && (
         <div className="w-full max-w-2xl">
           <p className="text-sm text-center text-muted-foreground mb-2">Question {currentQuestionIndex + 1} of {questions.length}</p>
           <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} />
