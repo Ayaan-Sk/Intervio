@@ -60,23 +60,6 @@ export default function LandingPage() {
             <div className="relative max-w-4xl mx-auto mb-12">
               <img src="/transforming-hiring.png" alt="Laptop showing interview software" className="rounded-2xl shadow-2xl" />
             </div>
-            <div className="grid md:grid-cols-3 gap-8 text-left">
-              <div className="bg-background p-6 rounded-lg shadow-sm">
-                <ShieldCheck className="h-8 w-8 text-primary mb-4" />
-                <h3 className="font-bold text-lg mb-2">Unbiased Insights</h3>
-                <p className="text-sm text-muted-foreground">Advanced algorithms provide data-grounded insights into each candidate's performance, free of human bias.</p>
-              </div>
-              <div className="bg-background p-6 rounded-lg shadow-sm">
-                <PieChart className="h-8 w-8 text-primary mb-4" />
-                <h3 className="font-bold text-lg mb-2">Efficient Evaluation</h3>
-                <p className="text-sm text-muted-foreground">Save time by identifying top candidates quickly, with automated analysis of technical skills, problem-solving abilities, and more.</p>
-              </div>
-              <div className="bg-background p-6 rounded-lg shadow-sm">
-                <Users className="h-8 w-8 text-primary mb-4" />
-                <h3 className="font-bold text-lg mb-2">Data-Driven Decisions</h3>
-                <p className="text-sm text-muted-foreground">An integrated overview of all candidate performances allows you to choose the best candidates.</p>
-              </div>
-            </div>
           </div>
         </section>
 
