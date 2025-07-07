@@ -4,10 +4,7 @@
 import { useState, useEffect } from 'react';
 import { TopicForm } from './topic-form';
 import { InterviewCard } from './interview-card';
-import { FeedbackCard } from './feedback-card';
 import { InterviewSummary } from './interview-summary';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeAnswerQuality } from '@/ai/flows/analyze-answer-quality';
 import { generateInterviewQuestions } from '@/ai/flows/generate-interview-questions';
@@ -21,7 +18,7 @@ interface AnalysisResult {
   answer: string;
 }
 
-type Step = 'topic' | 'interview' | 'feedback' | 'summary';
+type Step = 'topic' | 'interview' | 'summary';
 export type InterviewVoice = 'male' | 'female';
 
 export function VoiceMockupApp() {
@@ -37,7 +34,7 @@ export function VoiceMockupApp() {
   const [timeLeft, setTimeLeft] = useState(15 * 60);
 
   useEffect(() => {
-    if (step !== 'interview' && step !== 'feedback') {
+    if (step !== 'interview') {
         if (timeLeft !== 15 * 60) setTimeLeft(15 * 60); // Reset timer if not in interview
         return;
     };
@@ -106,7 +103,12 @@ export function VoiceMockupApp() {
       };
 
       setResults(prev => [...prev, finalResult]);
-      setStep('feedback');
+      
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(prev => prev + 1);
+      } else {
+        setStep('summary');
+      }
     } catch (error) {
       console.error('Error analyzing answer:', error);
       toast({
@@ -116,15 +118,6 @@ export function VoiceMockupApp() {
       });
     } finally {
       setIsAnalyzing(false);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-      setStep('interview');
-    } else {
-      setStep('summary');
     }
   };
 
@@ -155,17 +148,6 @@ export function VoiceMockupApp() {
             onLeave={handleRestart}
           />
         );
-
-      case 'feedback':
-        const latestResult = results[currentQuestionIndex];
-        return (
-          <div className="w-full max-w-2xl space-y-6 animate-fade-in">
-              {latestResult && <FeedbackCard result={latestResult} />}
-              <Button onClick={handleNext} className="w-full" disabled={isAnalyzing}>
-                {isAnalyzing ? <span className="animate-pulse">Analyzing...</span> : currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Interview'}
-              </Button>
-          </div>
-        );
         
       case 'summary':
         return <InterviewSummary results={results} questions={questions} onRestart={handleRestart} />;
@@ -181,12 +163,6 @@ export function VoiceMockupApp() {
 
   return (
     <div className={containerClass}>
-      {(step === 'feedback') && questions.length > 0 && (
-        <div className="w-full max-w-2xl">
-          <p className="text-sm text-center text-muted-foreground mb-2">Question {currentQuestionIndex + 1} of {questions.length}</p>
-          <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} />
-        </div>
-      )}
       {renderStep()}
     </div>
   );
