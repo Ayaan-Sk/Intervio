@@ -51,9 +51,9 @@ export default function LandingPage() {
             </div>
             {/* Background decorative images */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-6xl h-full -z-10">
-                <Image src="https://placehold.co/200x150.png" alt="Candidate thumbnail" data-ai-hint="man portrait" width={200} height={150} className="absolute top-1/2 left-24 rounded-2xl shadow-xl" />
-                <Image src="https://placehold.co/200x150.png" alt="Candidate thumbnail 2" data-ai-hint="woman portrait" width={200} height={150} className="absolute top-20 right-24 rounded-2xl shadow-xl" />
-                 <Image src="https://placehold.co/300x200.png" alt="UI element" data-ai-hint="UI element" width={300} height={200} className="absolute bottom-10 right-1/4 rounded-2xl shadow-2xl" />
+                <Image src="/candidate-1.png" alt="Candidate thumbnail" data-ai-hint="man portrait" width={200} height={150} className="absolute top-1/2 left-24 rounded-2xl shadow-xl" />
+                <Image src="/candidate-2.png" alt="Candidate thumbnail 2" data-ai-hint="woman portrait" width={200} height={150} className="absolute top-20 right-24 rounded-2xl shadow-xl" />
+                 <Image src="/ui-element.png" alt="UI element" data-ai-hint="UI element" width={300} height={200} className="absolute bottom-10 right-1/4 rounded-2xl shadow-2xl" />
             </div>
         </section>
 
