@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -59,7 +58,7 @@ export default function LandingPage() {
               At Intervio, we're passionate about revolutionizing the hiring process for the modern era. We understand that traditional methods can be time-consuming and hinder the ability to truly identify the best talent.
             </p>
             <div className="relative max-w-4xl mx-auto mb-12">
-              <Image src="/transforming-hiring.png" alt="Laptop showing interview software" data-ai-hint="laptop desk" width={1200} height={800} className="rounded-2xl shadow-2xl" />
+              <img src="/transforming-hiring.png" alt="Laptop showing interview software" className="rounded-2xl shadow-2xl" />
             </div>
             <div className="grid md:grid-cols-3 gap-8 text-left">
               <div className="bg-background p-6 rounded-lg shadow-sm">
@@ -132,7 +131,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="hidden md:block">
-              <Image src="/revolutionary-hiring.jpg" alt="Happy woman with headphones" data-ai-hint="woman headphones" width={500} height={500} className="rounded-full shadow-2xl object-cover w-[500px] h-[500px]" />
+              <img src="/revolutionary-hiring.jpg" alt="Happy woman with headphones" className="rounded-full shadow-2xl object-cover w-[500px] h-[500px]" />
             </div>
           </div>
         </section>
