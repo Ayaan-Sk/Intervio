@@ -6,8 +6,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Voice Mockup',
-  description: 'An AI-powered mock interview platform.',
+  title: 'Interview Prep AI',
+  description: 'An AI-powered mock interview and resume analysis platform.',
 };
 
 export default function RootLayout({
