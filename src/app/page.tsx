@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, CheckCircle, ChevronRight, ShieldCheck, PieChart, Users, Star, Bot } from 'lucide-react';
+import Image from 'next/image';
 
 const Logo = () => (
     <div className="flex items-center gap-2">
@@ -165,41 +166,16 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-400">
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-1">
-              <Logo />
-              <p className="mt-4 text-sm">
-                An all-in-one AI interview platform to streamline the hiring process.
-              </p>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col items-center text-center">
+            <Logo />
+            <p className="mt-4 max-w-lg text-sm">
+              An all-in-one AI interview platform to streamline the hiring process.
+            </p>
+            <div className="mt-8 w-full border-t border-gray-800 pt-6">
+              <p className="text-sm">Made by Final Year Students CSE</p>
+              <p className="mt-2 text-xs text-gray-500">&copy; {new Date().getFullYear()} Intervio Inc. All Rights Reserved.</p>
             </div>
-            <div className="col-span-1">
-              <h4 className="font-semibold text-white mb-4">Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="#" className="hover:text-white">About Us</Link></li>
-                <li><Link href="#" className="hover:text-white">Features</Link></li>
-                <li><Link href="#" className="hover:text-white">Contact Us</Link></li>
-              </ul>
-            </div>
-            <div className="col-span-1">
-                <h4 className="font-semibold text-white mb-4">Help</h4>
-                 <ul className="space-y-2 text-sm">
-                    <li><Link href="#" className="hover:text-white">Customer Support</Link></li>
-                    <li><Link href="#" className="hover:text-white">Delivery Details</Link></li>
-                    <li><Link href="#" className="hover:text-white">Terms & Conditions</Link></li>
-                    <li><Link href="#" className="hover:text-white">Privacy Policy</Link></li>
-                 </ul>
-            </div>
-            <div className="col-span-1">
-              <h4 className="font-semibold text-white mb-4">Join our newsletter</h4>
-              <form className="flex gap-2">
-                <Input type="email" placeholder="Enter your email address" className="bg-gray-800 border-gray-700 text-white" />
-                <Button type="submit" className="bg-primary hover:bg-primary/90">Subscribe</Button>
-              </form>
-            </div>
-          </div>
-          <div className="mt-8 border-t border-gray-800 pt-6 text-center text-sm">
-            <p>&copy; {new Date().getFullYear()} Intervio Inc. All Rights Reserved.</p>
           </div>
         </div>
       </footer>
