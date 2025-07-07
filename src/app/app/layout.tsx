@@ -1,16 +1,16 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
-import './globals.css';
+import '../globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Intervio - All-In-One AI Interview Platform',
-  description: 'Transforming hiring through innovation with our AI-powered mock interview and resume analysis platform.',
+  title: 'Interview Prep AI - App',
+  description: 'An AI-powered mock interview and resume analysis platform.',
 };
 
-export default function RootLayout({
+export default function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
