@@ -80,6 +80,33 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* How It Works Section */}
+        <section className="py-20">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">How Intervio Works</h2>
+            <div className="grid md:grid-cols-3 gap-8 text-left md:text-center">
+              
+              <div className="flex flex-col items-center text-center">
+                <img src="https://placehold.co/500x300.png" alt="Choose Your Topic" data-ai-hint="selecting topic" className="rounded-lg shadow-lg mb-6 w-full" />
+                <h3 className="font-bold text-xl mb-2">🎯 Choose Your Topic</h3>
+                <p className="text-muted-foreground max-w-xs">Select a technical or behavioral topic like Java, Python, C++, etc.</p>
+              </div>
+
+              <div className="flex flex-col items-center text-center">
+                <img src="https://placehold.co/500x300.png" alt="Speak With AI" data-ai-hint="voice interface" className="rounded-lg shadow-lg mb-6 w-full" />
+                <h3 className="font-bold text-xl mb-2">🎤 Speak With AI – Live Interview Starts</h3>
+                <p className="text-muted-foreground max-w-xs">The AI voice assistant asks questions, listens to your spoken answers, and adapts in real-time.</p>
+              </div>
+
+              <div className="flex flex-col items-center text-center">
+                <img src="https://placehold.co/500x300.png" alt="Get Feedback" data-ai-hint="dashboard report" className="rounded-lg shadow-lg mb-6 w-full" />
+                <h3 className="font-bold text-xl mb-2">📊 Get Instant Feedback & ATS Score</h3>
+                <p className="text-muted-foreground max-w-xs">At the end, receive an analyzed report showing correct answers, improvement areas, and your ATS compatibility score.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Why Choose Intervio Section */}
         <section id="features" className="py-20">
           <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
