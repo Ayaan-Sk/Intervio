@@ -42,8 +42,12 @@ export default function LandingPage() {
                     Our platform blends advanced artificial intelligence with intuitive features to streamline your talent selection process, saving you time, effort, and resources.
                 </p>
                 <div className="flex justify-center gap-4">
-                    <Button size="lg" className="bg-primary hover:bg-primary/90">Request Demo</Button>
-                    <Button size="lg" variant="outline">Learn More <ArrowRight className="ml-2 h-4 w-4" /></Button>
+                    <Button size="lg" className="bg-primary hover:bg-primary/90" asChild>
+                      <Link href="/app">Request Demo</Link>
+                    </Button>
+                    <Button size="lg" variant="outline" asChild>
+                      <Link href="/app?tab=resume">Resume Analyze <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                    </Button>
                 </div>
             </div>
             {/* Background decorative images */}
@@ -158,8 +162,8 @@ export default function LandingPage() {
                 <Button size="lg" variant="secondary" asChild>
                     <Link href="/app">Try for free</Link>
                 </Button>
-                <Button size="lg" variant="outline" className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-                    Request Demo
+                <Button size="lg" variant="outline" className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary" asChild>
+                    <Link href="/app">Request Demo</Link>
                 </Button>
               </div>
             </div>

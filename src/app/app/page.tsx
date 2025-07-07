@@ -5,7 +5,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bot, FileText, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function AppHome() {
+export default function AppHome({
+  searchParams,
+}: {
+  searchParams: { tab?: string };
+}) {
+  const defaultTab = searchParams?.tab === 'resume' ? 'resume' : 'interview';
+
   return (
     <div className="flex flex-col min-h-screen bg-secondary">
       <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur-sm">
@@ -20,7 +26,7 @@ export default function AppHome() {
         </div>
       </header>
       <main className="flex-1">
-        <Tabs defaultValue="interview" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <div className="flex justify-center border-b bg-background">
             <TabsList className="grid w-full max-w-md grid-cols-2 my-4">
               <TabsTrigger value="interview">
