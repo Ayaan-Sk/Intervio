@@ -14,12 +14,6 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'fireworks-dev-preview.appspot.com',
-        port: '',
-        pathname: '/**',
-      },
     ],
   },
   webpack: (config, { isServer }) => {
