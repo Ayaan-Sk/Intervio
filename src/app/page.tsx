@@ -66,26 +66,42 @@ export default function LandingPage() {
         {/* How It Works Section */}
         <section className="py-20">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">How Intervio Works</h2>
-            <div className="grid md:grid-cols-3 gap-8 text-left md:text-center">
-              
-              <div className="flex flex-col items-center text-center">
-                <img src="/how-it-works-1.png" alt="Choose Your Topic" data-ai-hint="selecting topic" className="rounded-lg shadow-lg mb-6 w-full" />
-                <h3 className="font-bold text-xl mb-2">🎯 Choose Your Topic</h3>
-                <p className="text-muted-foreground max-w-xs">Select a technical or behavioral topic like Java, Python, C++, etc.</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-20">How Intervio Works</h2>
+            <div className="space-y-24">
+
+              {/* Step 1: Text | Image */}
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                  <h3 className="font-bold text-3xl mb-4">🎯 1. Choose Your Topic</h3>
+                  <p className="text-muted-foreground text-lg">Select a technical or behavioral topic like Java, Python, C++, etc. to tailor the interview to the specific role you're hiring for.</p>
+                </div>
+                <div>
+                  <img src="/how-it-works-1.png" alt="Choose Your Topic" data-ai-hint="selecting topic" className="rounded-xl shadow-2xl" />
+                </div>
               </div>
 
-              <div className="flex flex-col items-center text-center">
-                <img src="/how-it-works-2.png" alt="Speak With AI" data-ai-hint="voice interface" className="rounded-lg shadow-lg mb-6 w-full" />
-                <h3 className="font-bold text-xl mb-2">🎤 Speak With AI – Live Interview Starts</h3>
-                <p className="text-muted-foreground max-w-xs">The AI voice assistant asks questions, listens to your spoken answers, and adapts in real-time.</p>
+              {/* Step 2: Image | Text */}
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div className="md:order-2">
+                  <h3 className="font-bold text-3xl mb-4">🎤 2. Speak With AI – Live Interview Starts</h3>
+                  <p className="text-muted-foreground text-lg">The AI voice assistant asks questions, listens to your spoken answers, and adapts in real-time, creating a natural and engaging interview experience.</p>
+                </div>
+                <div className="md:order-1">
+                  <img src="/how-it-works-2.png" alt="Speak With AI" data-ai-hint="voice interface" className="rounded-xl shadow-2xl" />
+                </div>
               </div>
 
-              <div className="flex flex-col items-center text-center">
-                <img src="/how-it-works-3.png" alt="Get Feedback" data-ai-hint="dashboard report" className="rounded-lg shadow-lg mb-6 w-full" />
-                <h3 className="font-bold text-xl mb-2">📊 Get Instant Feedback & ATS Score</h3>
-                <p className="text-muted-foreground max-w-xs">At the end, receive an analyzed report showing correct answers, improvement areas, and your ATS compatibility score.</p>
+              {/* Step 3: Text | Image */}
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                  <h3 className="font-bold text-3xl mb-4">📊 3. Get Instant Feedback & ATS Score</h3>
+                  <p className="text-muted-foreground text-lg">At the end, receive an analyzed report showing correct answers, improvement areas, and your ATS compatibility score to make data-driven decisions.</p>
+                </div>
+                <div>
+                  <img src="/how-it-works-3.png" alt="Get Feedback" data-ai-hint="dashboard report" className="rounded-xl shadow-2xl" />
+                </div>
               </div>
+
             </div>
           </div>
         </section>
