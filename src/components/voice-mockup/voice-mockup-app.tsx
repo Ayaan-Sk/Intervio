@@ -121,6 +121,23 @@ export function VoiceMockupApp() {
     }
   };
 
+  const handleSkipQuestion = () => {
+    const skippedResult: AnalysisResult = {
+      sentiment: 'neutral',
+      qualityRating: 0,
+      talkingPoints: [],
+      justification: 'This question was skipped by the user.',
+      answer: '(Skipped)',
+    };
+    setResults(prev => [...prev, skippedResult]);
+
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+    } else {
+      setStep('summary');
+    }
+  };
+
   const handleRestart = () => {
     setStep('topic');
     setTopics([]);
@@ -146,6 +163,7 @@ export function VoiceMockupApp() {
             totalQuestions={questions.length}
             timeLeft={timeLeft}
             onLeave={handleRestart}
+            onSkip={handleSkipQuestion}
           />
         );
         

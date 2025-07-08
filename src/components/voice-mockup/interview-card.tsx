@@ -21,11 +21,12 @@ interface InterviewCardProps {
   totalQuestions: number;
   timeLeft: number;
   onLeave: () => void;
+  onSkip: () => void;
 }
 
 export function InterviewCard({ 
   question, topics, voice, onAnswerSubmit, isAnalyzing, 
-  currentQuestionIndex, totalQuestions, timeLeft, onLeave 
+  currentQuestionIndex, totalQuestions, timeLeft, onLeave, onSkip
 }: InterviewCardProps) {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
@@ -90,6 +91,24 @@ export function InterviewCard({
     };
     getCameraPermission();
   }, [toast]);
+  
+  // Simulated Attention Check Effect
+  useEffect(() => {
+    if (!hasCameraPermission) return;
+
+    const attentionCheckInterval = setInterval(() => {
+      // Simulate a 20% chance of detecting a lack of attention
+      if (Math.random() < 0.2) {
+        toast({
+          variant: 'destructive',
+          title: 'Attention Warning',
+          description: 'Please maintain focus on the camera for an accurate assessment.',
+        });
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(attentionCheckInterval);
+  }, [hasCameraPermission, toast]);
 
   // Speech Recognition Setup Effect
   useEffect(() => {
@@ -267,10 +286,15 @@ export function InterviewCard({
               </p>
           </div>
           
-           <Button onClick={handleSubmit} className="w-full" disabled={isAnalyzing || isSpeaking}>
-              {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isAnalyzing ? 'Analyzing Answer...' : (isRecording ? 'Stop & Submit Answer' : 'Submit Answer')}
-            </Button>
+           <div className="flex flex-col sm:flex-row gap-2">
+             <Button onClick={handleSubmit} className="flex-grow w-full" disabled={isAnalyzing || isSpeaking || !transcript}>
+                {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isAnalyzing ? 'Analyzing Answer...' : (isRecording ? 'Stop & Submit Answer' : 'Submit Answer')}
+              </Button>
+              <Button variant="outline" onClick={onSkip} className="w-full sm:w-auto" disabled={isAnalyzing || isSpeaking}>
+                  Skip Question
+              </Button>
+          </div>
 
         </CardContent>
       </Card>
