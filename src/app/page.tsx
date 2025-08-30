@@ -1,7 +1,9 @@
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, Bot } from 'lucide-react';
+import { AuthState } from '@/components/auth-state';
 
 const Logo = () => (
     <div className="flex items-center gap-2">
@@ -21,14 +23,7 @@ export default function LandingPage() {
           <nav className="hidden md:flex gap-6 items-center">
             <Link href="#features" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Features</Link>
           </nav>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild>
-                <Link href="/login">Login</Link>
-            </Button>
-            <Button asChild>
-                <Link href="/signup">Sign Up</Link>
-            </Button>
-          </div>
+          <AuthState />
         </div>
       </header>
       <main className="flex-1">

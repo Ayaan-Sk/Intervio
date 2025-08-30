@@ -1,9 +1,15 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { FirebaseError } from 'firebase/app';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +18,6 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
@@ -24,32 +29,63 @@ const formSchema = z.object({
 });
 
 export default function SignupPage() {
-    const [isLoading, setIsLoading] = useState(false);
-    const { toast } = useToast();
-  
-    const form = useForm<z.infer<typeof formSchema>>({
-      resolver: zodResolver(formSchema),
-      defaultValues: {
-        fullName: '',
-        email: '',
-        password: '',
-        accountType: 'candidate',
-      },
-    });
-  
-    function handleSubmit(values: z.infer<typeof formSchema>) {
-      setIsLoading(true);
-      console.log(values);
-  
-      // Simulate API call
-      setTimeout(() => {
-          toast({
-              title: "Account Created",
-              description: "This is a mock signup. Backend not implemented.",
-          });
-          setIsLoading(false);
-      }, 1000);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      fullName: '',
+      email: '',
+      password: '',
+      accountType: 'candidate',
+    },
+  });
+
+  async function handleSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      await updateProfile(userCredential.user, {
+        displayName: values.fullName,
+      });
+
+      // Here you could also save the accountType to Firestore or Realtime Database
+      console.log('Account type selected:', values.accountType);
+
+      toast({
+        title: 'Account Created Successfully',
+        description: "Welcome! You're now signed in.",
+      });
+      router.push('/app');
+    } catch (error) {
+      console.error('Signup error:', error);
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = 'This email is already registered. Please log in instead.';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'The email address is not valid.';
+            break;
+          case 'auth/weak-password':
+            errorMessage = 'The password is too weak. Please choose a stronger password.';
+            break;
+          default:
+            errorMessage = `An error occurred: ${error.message}`;
+        }
+      }
+      toast({
+        variant: 'destructive',
+        title: 'Signup Failed',
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
     }
+  }
 
   return (
     <Card className="w-full max-w-md animate-fade-in-up">
@@ -100,42 +136,42 @@ export default function SignupPage() {
               )}
             />
             <FormField
-                control={form.control}
-                name="accountType"
-                render={({ field }) => (
+              control={form.control}
+              name="accountType"
+              render={({ field }) => (
                 <FormItem className="space-y-3">
-                    <FormLabel>I am a...</FormLabel>
-                    <FormControl>
-                        <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="candidate" />
-                                </FormControl>
-                                <FormLabel className="font-normal">Candidate</FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="hr" />
-                                </FormControl>
-                                <FormLabel className="font-normal">HR / Admin</FormLabel>
-                            </FormItem>
-                        </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
+                  <FormLabel>I am a...</FormLabel>
+                  <FormControl>
+                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="candidate" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Candidate</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="hr" />
+                        </FormControl>
+                        <FormLabel className="font-normal">HR / Admin</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
-                )}
+              )}
             />
             <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isLoading ? 'Creating Account...' : 'Create Account'}
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>
         </Form>
         <div className="mt-6 text-center text-sm">
-            Already have an account?{' '}
-            <Link href="/login" className="underline text-primary">
-                Log in
-            </Link>
+          Already have an account?{' '}
+          <Link href="/login" className="underline text-primary">
+            Log in
+          </Link>
         </div>
       </CardContent>
     </Card>
