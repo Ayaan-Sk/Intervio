@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -181,7 +182,7 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={isGenerating}>
+            <Button type="submit" className="w-full" disabled={isGenerating}>
               {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {isGenerating ? 'Preparing Interview...' : 'Start Interview'}
             </Button>
