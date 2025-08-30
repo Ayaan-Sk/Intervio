@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Mic, Bot, ArrowLeft, PauseCircle, Smile, Eye } from 'lucide-react';
+import { Loader2, Mic, Bot, ArrowLeft, PauseCircle, Smile, Eye, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { InterviewVoice } from './voice-mockup-app';
 import { Progress } from '@/components/ui/progress';
@@ -32,7 +32,7 @@ export function InterviewCard({
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [permissions, setPermissions] = useState<{camera: boolean | null, mic: boolean | null}>({ camera: null, mic: null });
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -61,103 +61,82 @@ export function InterviewCard({
     }
   }, []);
 
-  // Camera Permission Effect
+  // Permissions Effect
   useEffect(() => {
-    const getCameraPermission = async () => {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setHasCameraPermission(false);
-        toast({
-            variant: 'destructive',
-            title: 'Camera Not Supported',
-            description: 'Your browser does not support camera access.',
-        });
-        return;
-      }
+    const requestPermissions = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        
+        // Handle Camera
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
-        setHasCameraPermission(true);
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to continue.',
-        });
-      }
-    };
-    getCameraPermission();
-  }, [toast]);
-  
-  // Simulated Attention Check Effect
-  useEffect(() => {
-    if (!hasCameraPermission) return;
 
-    const attentionCheckInterval = setInterval(() => {
-      // Simulate a 20% chance of detecting a lack of attention
-      if (Math.random() < 0.2) {
-        toast({
-          variant: 'destructive',
-          title: 'Attention Warning',
-          description: 'Please maintain focus on the camera for an accurate assessment.',
-        });
-      }
-    }, 30000); // Check every 30 seconds
+        // Setup Speech Recognition (Mic)
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          const recognition = new SpeechRecognition();
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.lang = 'en-US';
 
-    return () => clearInterval(attentionCheckInterval);
-  }, [hasCameraPermission, toast]);
+          recognition.onresult = (event) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+              } else {
+                interimTranscript += event.results[i][0].transcript;
+              }
+            }
+            setTranscript(transcript => finalTranscript + interimTranscript);
+          };
+          
+          recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                setPermissions(p => ({...p, mic: false}));
+            }
+          };
 
-  // Speech Recognition Setup Effect
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast({
-        variant: 'destructive',
-        title: 'Speech Recognition Not Supported',
-        description: 'Your browser does not support speech recognition. Please try Chrome or Edge.',
-      });
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onresult = (event) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
+          recognition.onend = () => {
+            setIsRecording(false);
+          };
+          recognitionRef.current = recognition;
         } else {
-          interimTranscript += event.results[i][0].transcript;
+             toast({
+                variant: 'destructive',
+                title: 'Speech Recognition Not Supported',
+                description: 'Your browser does not support speech recognition. Please try Chrome or Edge.',
+             });
+             setPermissions(p => ({...p, mic: false}));
         }
+
+        setPermissions({ camera: true, mic: true });
+
+      } catch (error) {
+        console.error('Error accessing media devices:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Permission Denied',
+          description: 'Camera and Microphone access are required to start the interview.',
+        });
+        setPermissions({ camera: false, mic: false });
       }
-      setTranscript(transcript => finalTranscript + interimTranscript);
     };
-    
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      // ... error handling
-    };
-
-    recognition.onend = () => {
-      setIsRecording(false);
-    };
-
-    recognitionRef.current = recognition;
+    requestPermissions();
 
     return () => {
-      recognitionRef.current?.abort();
-    };
+        recognitionRef.current?.abort();
+        if (videoRef.current?.srcObject) {
+            (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+        }
+    }
   }, [toast]);
   
   // Text-to-Speech Effect
   useEffect(() => {
-    if (!question || typeof window === 'undefined' || !window.speechSynthesis) return;
+    if (!question || typeof window === 'undefined' || !window.speechSynthesis || permissions.camera !== true || permissions.mic !== true) return;
 
     const speak = () => {
         window.speechSynthesis.cancel();
@@ -186,7 +165,7 @@ export function InterviewCard({
         window.speechSynthesis.cancel();
         stopRecording();
     };
-  }, [question, voice, startRecording, stopRecording, toast]);
+  }, [question, voice, startRecording, stopRecording, toast, permissions]);
 
   const handleSubmit = () => {
     stopRecording();
@@ -208,6 +187,30 @@ export function InterviewCard({
   };
 
   const topicTitle = topics.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' / ') + ' Developer';
+
+  const renderPermissionsOverlay = () => {
+    if (permissions.camera === true && permissions.mic === true) return null;
+
+    let title = 'Requesting Permissions...';
+    let description = 'Please grant access to your camera and microphone to begin the interview.';
+    let content = <Loader2 className="h-8 w-8 animate-spin" />;
+
+    if (permissions.camera === false || permissions.mic === false) {
+      title = 'Permissions Required';
+      description = 'Camera and Microphone access are required for the interview. Please enable them in your browser settings and refresh the page.';
+      content = <AlertTriangle className="h-8 w-8 text-destructive" />;
+    }
+    
+    return (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10 text-center p-4">
+            <div className="bg-background p-6 rounded-lg shadow-xl flex flex-col items-center gap-4">
+                {content}
+                <h3 className="text-xl font-semibold">{title}</h3>
+                <p className="text-muted-foreground">{description}</p>
+            </div>
+        </div>
+    );
+  };
 
   return (
     <div className="w-full max-w-5xl animate-fade-in-up space-y-4">
@@ -245,35 +248,22 @@ export function InterviewCard({
             </div>
 
             <div className="bg-slate-900 rounded-lg border aspect-video relative flex items-center justify-center text-muted-foreground overflow-hidden">
+                {renderPermissionsOverlay()}
                 <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
-                {hasCameraPermission === null && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50">
-                        <Loader2 className="h-8 w-8 animate-spin mb-2"/>
-                        <p>Requesting camera...</p>
+                <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                    <div className="hidden sm:flex items-center gap-2 bg-black/30 backdrop-blur-sm p-2 rounded-full text-white">
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-white/20"><PauseCircle /></Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-white/20"><Smile /></Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-white/20"><Eye /></Button>
                     </div>
-                )}
-                 {hasCameraPermission === false && (
-                    <Alert variant="destructive" className="absolute m-4 w-auto">
-                        <AlertTitle>Camera Access Required</AlertTitle>
-                        <AlertDescription>Please allow camera access.</AlertDescription>
-                    </Alert>
-                )}
-                {hasCameraPermission && (
-                    <div className="absolute bottom-4 right-4 flex items-center gap-2">
-                        <div className="hidden sm:flex items-center gap-2 bg-black/30 backdrop-blur-sm p-2 rounded-full text-white">
-                           <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-white/20"><PauseCircle /></Button>
-                           <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-white/20"><Smile /></Button>
-                           <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-white/20"><Eye /></Button>
-                        </div>
-                        <div className="bg-black/30 backdrop-blur-sm p-2 rounded-full text-white">
-                            {isRecording ? (
-                                <Mic className="text-red-500 animate-pulse" />
-                            ) : (
-                                <Mic />
-                            )}
-                        </div>
+                    <div className="bg-black/30 backdrop-blur-sm p-2 rounded-full text-white">
+                        {isRecording ? (
+                            <Mic className="text-red-500 animate-pulse" />
+                        ) : (
+                            <Mic />
+                        )}
                     </div>
-                )}
+                </div>
             </div>
           </div>
 
@@ -287,11 +277,11 @@ export function InterviewCard({
           </div>
           
            <div className="flex flex-col sm:flex-row gap-2">
-             <Button onClick={handleSubmit} className="flex-grow w-full" disabled={isAnalyzing || isSpeaking || !transcript}>
+             <Button onClick={handleSubmit} className="flex-grow w-full" disabled={isAnalyzing || isSpeaking || !transcript || permissions.camera !== true || permissions.mic !== true}>
                 {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isAnalyzing ? 'Analyzing Answer...' : (isRecording ? 'Stop & Submit Answer' : 'Submit Answer')}
+                {isAnalyzing ? 'Analyzing Answer...' : 'Submit Answer'}
               </Button>
-              <Button variant="outline" onClick={onSkip} className="w-full sm:w-auto" disabled={isAnalyzing || isSpeaking}>
+              <Button variant="outline" onClick={onSkip} className="w-full sm:w-auto" disabled={isAnalyzing || isSpeaking || permissions.camera !== true || permissions.mic !== true}>
                   Skip Question
               </Button>
           </div>
