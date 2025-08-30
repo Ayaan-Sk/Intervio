@@ -5,7 +5,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { auth } from '@/lib/firebase';
 
 export default function AppRedirector() {
   const { user, isLoading } = useAuth();

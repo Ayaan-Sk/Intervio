@@ -57,7 +57,7 @@ export default function HistoryPage() {
                     <h1 className="text-xl font-bold">Interview History</h1>
                 </div>
                 <Button variant="outline" asChild>
-                    <Link href="/app"><ArrowLeft className="mr-2"/> Back to App</Link>
+                    <Link href="/app"><ArrowLeft className="mr-2"/> Back to Dashboard</Link>
                 </Button>
             </div>
         </header>

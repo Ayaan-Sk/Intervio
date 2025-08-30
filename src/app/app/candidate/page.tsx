@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { VoiceMockupApp } from '@/components/voice-mockup/voice-mockup-app';
 import { ResumeCheckerApp } from '@/components/resume-checker/resume-checker-app';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bot, FileText, Home, History } from 'lucide-react';
+import { Bot, FileText, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AuthState } from '@/components/auth-state';
 
