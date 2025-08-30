@@ -9,15 +9,18 @@ import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export function AuthState() {
   const { user, isLoading } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleSignOut = async () => {
     try {
       await signOut(auth);
       toast({ title: 'Signed Out', description: 'You have been successfully signed out.' });
+      router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
       toast({

@@ -1,66 +1,54 @@
-import Link from 'next/link';
-import { VoiceMockupApp } from '@/components/voice-mockup/voice-mockup-app';
-import { ResumeCheckerApp } from '@/components/resume-checker/resume-checker-app';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bot, FileText, Home, History } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
-export default function AppHome({
-  searchParams,
-}: {
-  searchParams: { tab?: string };
-}) {
-  const defaultTab = searchParams?.tab === 'resume' ? 'resume' : 'interview';
+'use client';
+
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
+import { auth } from '@/lib/firebase';
+
+export default function AppRedirector() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
+    const checkUserRole = async () => {
+      try {
+        const idTokenResult = await user.getIdTokenResult();
+        // In a real app, you would set a custom claim like `role: 'hr'`
+        // during user signup or via a backend process.
+        // For this demo, we'll simulate it by checking the display name.
+        if (idTokenResult.claims.role === 'hr' || user.displayName?.toLowerCase().includes('hr')) {
+          router.replace('/app/hr');
+        } else {
+          router.replace('/app/candidate');
+        }
+      } catch (error) {
+        console.error("Error getting user token:", error);
+        // Default to candidate page on error
+        router.replace('/app/candidate');
+      }
+    };
+
+    checkUserRole();
+
+  }, [user, isLoading, router]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-secondary">
-      <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2">
-            <Bot className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold font-headline">Interview Prep AI</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/app/history"><History className="mr-2"/> View History</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/"><Home className="mr-2"/> Back to Home</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-      <main className="flex-1">
-        <Tabs defaultValue={defaultTab} className="w-full">
-          <div className="flex justify-center border-b bg-background">
-            <TabsList className="grid w-full max-w-md grid-cols-2 my-4">
-              <TabsTrigger value="interview">
-                <Bot className="mr-2" />
-                Mock Interview
-              </TabsTrigger>
-              <TabsTrigger value="resume">
-                <FileText className="mr-2" />
-                Resume ATS Checker
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value="interview">
-            <VoiceMockupApp />
-          </TabsContent>
-          <TabsContent value="resume">
-            <div className="container mx-auto py-8 px-4 flex flex-col items-center gap-8">
-              <ResumeCheckerApp />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
-      <footer className="py-6 md:px-8 md:py-0 bg-background">
-        <div className="container flex flex-col items-center justify-center gap-4 md:h-24 md:flex-row">
-          <p className="text-balance text-center text-sm leading-loose text-muted-foreground md:text-left">
-            Built with Next.js, Genkit, and ShadCN UI.
-          </p>
-        </div>
-      </footer>
+    <div className="flex h-screen w-full items-center justify-center bg-secondary">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="text-muted-foreground">Redirecting to your dashboard...</p>
+      </div>
     </div>
   );
 }

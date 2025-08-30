@@ -1,7 +1,8 @@
+
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Interview Prep AI - App',
+  title: 'Intervio - App',
   description: 'An AI-powered mock interview and resume analysis platform.',
 };
 
