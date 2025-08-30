@@ -3,7 +3,10 @@ import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const inter = Inter({ 
+  subsets: ['latin'], 
+  variable: '--font-inter' 
+});
 
 export const metadata: Metadata = {
   title: 'Intervio - All-In-One AI Interview Platform',

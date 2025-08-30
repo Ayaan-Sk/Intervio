@@ -210,9 +210,9 @@ export function InterviewCard({
   const topicTitle = topics.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' / ') + ' Developer';
 
   return (
-    <div className="w-full max-w-5xl animate-fade-in space-y-4">
+    <div className="w-full max-w-5xl animate-fade-in-up space-y-4">
       <header className="flex justify-between items-center px-1">
-        <h1 className="text-xl md:text-2xl font-bold">{topicTitle}</h1>
+        <h1 className="text-xl md:text-2xl font-bold font-headline">{topicTitle}</h1>
         <Button variant="outline" onClick={onLeave}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Leave Interview
@@ -227,14 +227,14 @@ export function InterviewCard({
               <Progress value={((currentQuestionIndex + 1) / totalQuestions) * 100} />
             </div>
             <div className="text-sm font-medium bg-muted text-muted-foreground px-3 py-1.5 rounded-md">
-              Total remaining time <span className="font-mono text-foreground">{formatTime(timeLeft)}</span>
+              Time Remaining: <span className="font-mono text-foreground">{formatTime(timeLeft)}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-slate-900 rounded-lg border aspect-video flex items-center justify-center overflow-hidden">
                 <Image 
-                    src="https://placehold.co/800x450.png"
+                    src="https://picsum.photos/800/450"
                     alt="AI Interviewer Avatar"
                     width={800}
                     height={450}
@@ -277,12 +277,12 @@ export function InterviewCard({
             </div>
           </div>
 
-          <div className="bg-slate-800 text-white p-3 rounded-lg flex items-center gap-3">
+          <div className="bg-secondary p-4 rounded-lg flex items-center gap-3 border">
               <div className="bg-primary p-1.5 rounded-full flex-shrink-0">
                 <Bot className="text-primary-foreground h-5 w-5" />
               </div>
-              <p className="font-medium text-sm md:text-base">
-                AVA: {isSpeaking ? <span className="animate-pulse">...</span> : question}
+              <p className="font-medium text-sm md:text-base text-secondary-foreground">
+                {isSpeaking ? <span className="animate-pulse">...</span> : question}
               </p>
           </div>
           
