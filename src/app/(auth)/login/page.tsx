@@ -36,15 +36,31 @@ export default function LoginPage() {
     },
   });
 
+  const checkUserRoleAndRedirect = async (user: any) => {
+    try {
+      const idTokenResult = await user.getIdTokenResult();
+      // For this demo, we simulate HR role by checking display name for 'hr'.
+      // In a real app, this would be a custom claim set via a backend.
+      if (idTokenResult.claims.role === 'hr' || user.displayName?.toLowerCase().includes('hr')) {
+        router.push('/app/hr');
+      } else {
+        router.push('/app/candidate');
+      }
+    } catch (error) {
+      console.error("Error getting user token, defaulting to candidate page:", error);
+      router.push('/app/candidate');
+    }
+  };
+
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
         title: 'Logged In Successfully',
-        description: "Welcome back! You're now signed in.",
+        description: "Welcome back! Redirecting you now...",
       });
-      router.push('/app');
+      await checkUserRoleAndRedirect(userCredential.user);
     } catch (error) {
       console.error('Login error:', error);
       let errorMessage = 'An unexpected error occurred. Please try again.';
@@ -67,7 +83,6 @@ export default function LoginPage() {
         title: 'Login Failed',
         description: errorMessage,
       });
-    } finally {
       setIsLoading(false);
     }
   }

@@ -43,6 +43,14 @@ export default function SignupPage() {
     },
   });
 
+  const redirectToDashboard = (accountType: 'candidate' | 'hr') => {
+    if (accountType === 'hr') {
+      router.push('/app/hr');
+    } else {
+      router.push('/app/candidate');
+    }
+  };
+
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
@@ -51,14 +59,16 @@ export default function SignupPage() {
         displayName: values.fullName,
       });
 
-      // Here you could also save the accountType to Firestore or Realtime Database
-      console.log('Account type selected:', values.accountType);
-
+      // In a real app, you would set a custom claim for the 'hr' role using a Cloud Function.
+      // For this demo, we'll redirect based on the form selection.
+      
       toast({
         title: 'Account Created Successfully',
-        description: "Welcome! You're now signed in.",
+        description: "Welcome! You're now being redirected.",
       });
-      router.push('/app');
+      
+      redirectToDashboard(values.accountType);
+
     } catch (error) {
       console.error('Signup error:', error);
       let errorMessage = 'An unexpected error occurred. Please try again.';
@@ -82,7 +92,6 @@ export default function SignupPage() {
         title: 'Signup Failed',
         description: errorMessage,
       });
-    } finally {
       setIsLoading(false);
     }
   }
