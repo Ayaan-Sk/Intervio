@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, Bot, CheckCircle } from 'lucide-react';
 import { AuthState } from '@/components/auth-state';
+import { GetStartedButton } from '@/components/get-started-button';
 
 const Logo = () => (
     <div className="flex items-center gap-2">
@@ -40,9 +41,7 @@ export default function LandingPage() {
                     Master your interviews with AI-driven practice, instant feedback, and resume analysis. Land your dream job faster.
                 </p>
                 <div className="flex justify-center gap-4">
-                    <Button size="lg" className="font-semibold" asChild>
-                      <Link href="/signup">Get Started for Free</Link>
-                    </Button>
+                    <GetStartedButton />
                     <Button size="lg" variant="outline" asChild>
                       <Link href="/app?tab=resume">Try Resume Analyzer <ArrowRight className="ml-2 h-4 w-4" /></Link>
                     </Button>
