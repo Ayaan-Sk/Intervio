@@ -1,9 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { ArrowRight, CheckCircle, ChevronRight, ShieldCheck, PieChart, Users, Star, Bot } from 'lucide-react';
-import Image from 'next/image';
+import { ArrowRight, Bot } from 'lucide-react';
 
 const Logo = () => (
     <div className="flex items-center gap-2">
@@ -23,9 +21,14 @@ export default function LandingPage() {
           <nav className="hidden md:flex gap-6 items-center">
             <Link href="#features" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Features</Link>
           </nav>
-          <Button asChild>
-            <Link href="/app">Start Interview</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" asChild>
+                <Link href="/login">Login</Link>
+            </Button>
+            <Button asChild>
+                <Link href="/signup">Sign Up</Link>
+            </Button>
+          </div>
         </div>
       </header>
       <main className="flex-1">
@@ -42,7 +45,7 @@ export default function LandingPage() {
                 </p>
                 <div className="flex justify-center gap-4">
                     <Button size="lg" className="bg-primary hover:bg-primary/90" asChild>
-                      <Link href="/app">Request Demo</Link>
+                      <Link href="/signup">Get Started</Link>
                     </Button>
                     <Button size="lg" variant="outline" asChild>
                       <Link href="/app?tab=resume">Resume Analyze <ArrowRight className="ml-2 h-4 w-4" /></Link>
@@ -150,7 +153,7 @@ export default function LandingPage() {
               </p>
               <div className="flex gap-4">
                 <Button size="lg" variant="secondary" asChild>
-                    <Link href="/app">Try for free</Link>
+                    <Link href="/signup">Try for free</Link>
                 </Button>
                 <Button size="lg" variant="outline" className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary" asChild>
                     <Link href="/app">Request Demo</Link>
