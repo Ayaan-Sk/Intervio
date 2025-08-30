@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { VoiceMockupApp } from '@/components/voice-mockup/voice-mockup-app';
 import { ResumeCheckerApp } from '@/components/resume-checker/resume-checker-app';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bot, FileText, Home } from 'lucide-react';
+import { Bot, FileText, Home, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function AppHome({
@@ -20,9 +20,14 @@ export default function AppHome({
             <Bot className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold font-headline">Interview Prep AI</h1>
           </div>
-          <Button variant="outline" asChild>
-            <Link href="/"><Home className="mr-2"/> Back to Home</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/app/history"><History className="mr-2"/> View History</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/"><Home className="mr-2"/> Back to Home</Link>
+            </Button>
+          </div>
         </div>
       </header>
       <main className="flex-1">
