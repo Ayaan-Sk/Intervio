@@ -9,7 +9,16 @@ import { Loader2, Mic, Bot, ArrowLeft, PauseCircle, Smile, Eye, AlertTriangle } 
 import { useToast } from '@/hooks/use-toast';
 import type { InterviewVoice } from './voice-mockup-app';
 import { Progress } from '@/components/ui/progress';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
+
 
 interface InterviewCardProps {
   question: string;
@@ -116,11 +125,6 @@ export function InterviewCard({
 
       } catch (error) {
         console.error('Error accessing media devices:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Permission Denied',
-          description: 'Camera and Microphone access are required to start the interview.',
-        });
         setPermissions({ camera: false, mic: false });
       }
     };
@@ -188,32 +192,31 @@ export function InterviewCard({
 
   const topicTitle = topics.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' / ') + ' Developer';
 
-  const renderPermissionsOverlay = () => {
-    if (permissions.camera === true && permissions.mic === true) return null;
-
-    let title = 'Requesting Permissions...';
-    let description = 'Please grant access to your camera and microphone to begin the interview.';
-    let content = <Loader2 className="h-8 w-8 animate-spin" />;
-
-    if (permissions.camera === false || permissions.mic === false) {
-      title = 'Permissions Required';
-      description = 'Camera and Microphone access are required for the interview. Please enable them in your browser settings and refresh the page.';
-      content = <AlertTriangle className="h-8 w-8 text-destructive" />;
-    }
-    
+  const renderPermissionsDialog = () => {
+    const isOpen = permissions.camera === false || permissions.mic === false;
     return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10 text-center p-4">
-            <div className="bg-background p-6 rounded-lg shadow-xl flex flex-col items-center gap-4">
-                {content}
-                <h3 className="text-xl font-semibold">{title}</h3>
-                <p className="text-muted-foreground">{description}</p>
-            </div>
-        </div>
+      <AlertDialog open={isOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="text-destructive" /> Permissions Required
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Camera and Microphone access are essential for the mock interview. Please enable them in your browser settings to continue.
+              You may need to refresh the page after granting permissions.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={onLeave}>Leave Interview</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     );
   };
-
+  
   return (
     <div className="w-full max-w-5xl animate-fade-in-up space-y-4">
+      {renderPermissionsDialog()}
       <header className="flex justify-between items-center px-1">
         <h1 className="text-xl md:text-2xl font-bold font-headline">{topicTitle}</h1>
         <Button variant="outline" onClick={onLeave}>
@@ -248,7 +251,15 @@ export function InterviewCard({
             </div>
 
             <div className="bg-slate-900 rounded-lg border aspect-video relative flex items-center justify-center text-muted-foreground overflow-hidden">
-                {renderPermissionsOverlay()}
+                {permissions.camera === null && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10 text-center p-4">
+                        <div className="bg-background p-6 rounded-lg shadow-xl flex flex-col items-center gap-4">
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                            <h3 className="text-xl font-semibold">Requesting Permissions...</h3>
+                            <p className="text-muted-foreground">Please grant access to your camera and microphone.</p>
+                        </div>
+                    </div>
+                )}
                 <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
                 <div className="absolute bottom-4 right-4 flex items-center gap-2">
                     <div className="hidden sm:flex items-center gap-2 bg-black/30 backdrop-blur-sm p-2 rounded-full text-white">
