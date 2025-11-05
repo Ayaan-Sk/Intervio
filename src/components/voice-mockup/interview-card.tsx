@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Mic, Bot, ArrowLeft, PauseCircle, Smile, Eye, AlertTriangle } from 'lucide-react';
@@ -239,14 +238,13 @@ export function InterviewCard({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-slate-900 rounded-lg border aspect-video flex items-center justify-center overflow-hidden">
-                <Image 
-                    src="https://picsum.photos/800/450"
-                    alt="AI Interviewer Avatar"
-                    width={800}
-                    height={450}
-                    data-ai-hint="3d avatar"
-                    className="object-cover w-full h-full"
-                    priority
+                <video 
+                    src="/interviewer.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
                 />
             </div>
 
@@ -302,3 +300,5 @@ export function InterviewCard({
     </div>
   );
 }
+
+    
