@@ -88,4 +88,3 @@ This project consists of two main parts: the Next.js frontend and the Genkit AI 
 - **`src/lib`**: Contains utility functions and library initializations (e.g., Firebase, `cn` utility).
 - **`src/hooks`**: Contains custom React hooks, such as `useAuth` and `useToast`.
 - **`public`**: Contains static assets like images and fonts.
-
