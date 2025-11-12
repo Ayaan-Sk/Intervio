@@ -1,10 +1,12 @@
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, Bot, CheckCircle } from 'lucide-react';
 import { AuthState } from '@/components/auth-state';
 import { GetStartedButton } from '@/components/get-started-button';
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
 const Logo = () => (
     <div className="flex items-center gap-2">
@@ -16,6 +18,7 @@ const Logo = () => (
 );
 
 export default function LandingPage() {
+  const { howItWorks, whyChoose } = placeholderImages;
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm">
@@ -60,7 +63,7 @@ export default function LandingPage() {
                   <p className="text-muted-foreground text-lg">Select a technical or behavioral topic like Java, Python, C++, etc. to tailor the interview to the specific role you're applying for.</p>
                 </div>
                 <div>
-                  <img src="https://picsum.photos/600/400" alt="Choose Your Topic" data-ai-hint="selecting topic" className="rounded-xl shadow-2xl" />
+                  <Image src={howItWorks.step1.src} alt={howItWorks.step1.alt} width={howItWorks.step1.width} height={howItWorks.step1.height} data-ai-hint={howItWorks.step1.hint} className="rounded-xl shadow-2xl" />
                 </div>
               </div>
 
@@ -70,7 +73,7 @@ export default function LandingPage() {
                   <p className="text-muted-foreground text-lg">The AI voice assistant asks questions and listens to your spoken answers, creating a natural and engaging real-time interview experience.</p>
                 </div>
                 <div className="md:order-1">
-                  <img src="https://picsum.photos/600/400" alt="Speak With AI" data-ai-hint="voice interface" className="rounded-xl shadow-2xl" />
+                  <Image src={howItWorks.step2.src} alt={howItWorks.step2.alt} width={howItWorks.step2.width} height={howItWorks.step2.height} data-ai-hint={howItWorks.step2.hint} className="rounded-xl shadow-2xl" />
                 </div>
               </div>
 
@@ -80,7 +83,7 @@ export default function LandingPage() {
                   <p className="text-muted-foreground text-lg">Receive an instant report detailing your performance, improvement areas, and an ATS compatibility score to help you make data-driven improvements.</p>
                 </div>
                 <div>
-                  <img src="https://picsum.photos/600/400" alt="Get Feedback" data-ai-hint="dashboard report" className="rounded-xl shadow-2xl" />
+                  <Image src={howItWorks.step3.src} alt={howItWorks.step3.alt} width={howItWorks.step3.width} height={howItWorks.step3.height} data-ai-hint={howItWorks.step3.hint} className="rounded-xl shadow-2xl" />
                 </div>
               </div>
             </div>
@@ -102,7 +105,7 @@ export default function LandingPage() {
               </Button>
             </div>
             <div>
-              <img src="https://picsum.photos/600/500" alt="Feature illustration" data-ai-hint="happy developer" className="rounded-xl shadow-2xl" />
+              <Image src={whyChoose.src} alt={whyChoose.alt} width={whyChoose.width} height={whyChoose.height} data-ai-hint={whyChoose.hint} className="rounded-xl shadow-2xl" />
             </div>
           </div>
         </section>

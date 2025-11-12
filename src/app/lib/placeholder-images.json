@@ -1,0 +1,32 @@
+{
+  "howItWorks": {
+    "step1": {
+      "src": "https://picsum.photos/seed/choose-topic/600/400",
+      "width": 600,
+      "height": 400,
+      "alt": "A person selecting a topic on a screen.",
+      "hint": "selecting topic"
+    },
+    "step2": {
+      "src": "https://picsum.photos/seed/speak-ai/600/400",
+      "width": 600,
+      "height": 400,
+      "alt": "A visual representation of a voice interface.",
+      "hint": "voice interface"
+    },
+    "step3": {
+      "src": "https://picsum.photos/seed/get-feedback/600/400",
+      "width": 600,
+      "height": 400,
+      "alt": "A dashboard showing performance metrics and feedback.",
+      "hint": "dashboard report"
+    }
+  },
+  "whyChoose": {
+    "src": "https://picsum.photos/seed/happy-dev/600/500",
+    "width": 600,
+    "height": 500,
+    "alt": "A happy developer working at their computer.",
+    "hint": "happy developer"
+  }
+}
