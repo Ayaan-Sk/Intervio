@@ -239,7 +239,7 @@ export function InterviewCard({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-slate-900 rounded-lg border aspect-video flex items-center justify-center overflow-hidden">
                 <video 
-                    src="/interviewer.mp4"
+                    src="/girl.mp4"
                     autoPlay
                     loop
                     muted
