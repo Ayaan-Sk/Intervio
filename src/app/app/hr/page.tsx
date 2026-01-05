@@ -20,14 +20,16 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Bot, Check, ChevronsUpDown, X, CalendarIcon, Briefcase, Users, Send } from 'lucide-react';
 
-const programmingTopics = [
+const interviewTopics = [
   { value: 'c', label: 'C' }, { value: 'c++', label: 'C++' }, { value: 'c#', label: 'C#' },
   { value: 'css', label: 'CSS' }, { value: 'docker', label: 'Docker' }, { value: 'general', label: 'General' },
-  { value: 'go', label: 'Go' }, { value: 'html', label: 'HTML' }, { value: 'java', label: 'Java' },
+  { value: 'go', label: 'Go' }, { value: 'geography', label: 'Geography' }, { value: 'history', label: 'History' },
+  { value: 'html', label: 'HTML' }, { value: 'java', label: 'Java' },
   { value: 'javascript', label: 'JavaScript' }, { value: 'kotlin', label: 'Kotlin' }, { value: 'kubernetes', label: 'Kubernetes' },
   { value: 'php', label: 'PHP' }, { value: 'python', label: 'Python' }, { value: 'react', label: 'React' },
-  { value: 'ruby', label: 'Ruby' }, { value: 'rust', label: 'Rust' }, { value: 'scala', label: 'Scala' },
-  { value: 'sql', label: 'SQL' }, { value: 'swift', label: 'Swift' }, { value: 'typescript', label: 'TypeScript' },
+  { value: 'ruby', label: 'Ruby' }, { value: 'rust', label: 'Rust' }, { value: 'science', label: 'Science' },
+  { value: 'scala', label: 'Scala' }, { value: 'sql', label: 'SQL' }, { value: 'swift', label: 'Swift' },
+  { value: 'typescript', label: 'TypeScript' },
 ] as const;
 
 const formSchema = z.object({
@@ -114,7 +116,7 @@ export default function HRDashboard() {
                       name="topics"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
-                          <FormLabel>Technical Topics</FormLabel>
+                          <FormLabel>Interview Topics</FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -129,7 +131,7 @@ export default function HRDashboard() {
                                 <CommandInput placeholder="Search topics..." />
                                 <CommandList><CommandEmpty>No topic found.</CommandEmpty>
                                 <CommandGroup>
-                                  {programmingTopics.map((topic) => (
+                                  {interviewTopics.map((topic) => (
                                     <CommandItem
                                       value={topic.label} key={topic.value}
                                       onSelect={() => {
@@ -151,7 +153,7 @@ export default function HRDashboard() {
                           </Popover>
                           <div className="pt-2 flex flex-wrap gap-2">
                             {selectedTopics.map((topicValue) => {
-                              const topicLabel = programmingTopics.find((t) => t.value === topicValue)?.label;
+                              const topicLabel = interviewTopics.find((t) => t.value === topicValue)?.label;
                               return (
                                 <Badge variant="secondary" key={topicValue}>
                                   {topicLabel}

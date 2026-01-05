@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Check, ChevronsUpDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const programmingTopics = [
+const interviewTopics = [
   { value: 'c', label: 'C' },
   { value: 'c++', label: 'C++' },
   { value: 'c#', label: 'C#' },
@@ -23,6 +23,8 @@ const programmingTopics = [
   { value: 'docker', label: 'Docker' },
   { value: 'general', label: 'General' },
   { value: 'go', label: 'Go' },
+  { value: 'geography', label: 'Geography' },
+  { value: 'history', label: 'History' },
   { value: 'html', label: 'HTML' },
   { value: 'java', label: 'Java' },
   { value: 'javascript', label: 'JavaScript' },
@@ -33,6 +35,7 @@ const programmingTopics = [
   { value: 'react', label: 'React' },
   { value: 'ruby', label: 'Ruby' },
   { value: 'rust', label: 'Rust' },
+  { value: 'science', label: 'Science' },
   { value: 'scala', label: 'Scala' },
   { value: 'sql', label: 'SQL' },
   { value: 'swift', label: 'Swift' },
@@ -82,7 +85,7 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
               name="topics"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Technical Topics</FormLabel>
+                  <FormLabel>Interview Topics</FormLabel>
                   <FormDescription>Search for and select topics for your interview.</FormDescription>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -103,7 +106,7 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
                         <CommandList>
                           <CommandEmpty>No topic found.</CommandEmpty>
                           <CommandGroup>
-                            {programmingTopics.map((topic) => (
+                            {interviewTopics.map((topic) => (
                               <CommandItem
                                 value={topic.label}
                                 key={topic.value}
@@ -133,7 +136,7 @@ export function TopicForm({ onSubmit, isGenerating }: TopicFormProps) {
 
                   <div className="pt-2 flex flex-wrap gap-2">
                     {selectedTopics.map((topicValue) => {
-                      const topicLabel = programmingTopics.find((t) => t.value === topicValue)?.label;
+                      const topicLabel = interviewTopics.find((t) => t.value === topicValue)?.label;
                       return (
                         <Badge variant="secondary" key={topicValue}>
                           {topicLabel}
