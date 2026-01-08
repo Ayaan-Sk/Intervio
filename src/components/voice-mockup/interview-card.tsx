@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Mic, Bot, ArrowLeft, PauseCircle, Smile, Eye, AlertTriangle } from 'lucide-react';
+import { Loader2, Mic, Bot, ArrowLeft, PauseCircle, Smile, Eye, AlertTriangle, Type } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { InterviewVoice } from './voice-mockup-app';
 import { Progress } from '@/components/ui/progress';
@@ -17,6 +17,7 @@ import {
   AlertDialogFooter,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 
 interface InterviewCardProps {
@@ -41,6 +42,7 @@ export function InterviewCard({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [permissions, setPermissions] = useState<{camera: boolean | null, mic: boolean | null}>({ camera: null, mic: null });
+  const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -51,7 +53,7 @@ export function InterviewCard({
   }, [isRecording]);
 
   const startRecording = useCallback(() => {
-    if (recognitionRef.current && !isRecordingRef.current) {
+    if (recognitionRef.current && !isRecordingRef.current && inputMode === 'voice') {
       setTranscript('');
       try {
         recognitionRef.current.start();
@@ -60,7 +62,7 @@ export function InterviewCard({
         console.warn('Speech recognition could not be started: ', e);
       }
     }
-  }, []);
+  }, [inputMode]);
 
   const stopRecording = useCallback(() => {
     if (recognitionRef.current && isRecordingRef.current) {
@@ -174,12 +176,25 @@ export function InterviewCard({
     stopRecording();
     if (transcript.trim()) {
       onAnswerSubmit(transcript);
+      setTranscript('');
     } else {
         toast({
             variant: 'destructive',
             title: 'No Answer Detected',
             description: 'Please provide an answer before submitting.',
         });
+    }
+  };
+
+  const handleToggleInputMode = () => {
+    if (inputMode === 'voice') {
+      stopRecording();
+      setInputMode('text');
+      setTranscript('');
+    } else {
+      setInputMode('voice');
+      setTranscript('');
+      startRecording();
     }
   };
 
@@ -265,13 +280,15 @@ export function InterviewCard({
                         <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-white/20"><Smile /></Button>
                         <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-white/20"><Eye /></Button>
                     </div>
-                    <div className="bg-black/30 backdrop-blur-sm p-2 rounded-full text-white">
-                        {isRecording ? (
-                            <Mic className="text-red-500 animate-pulse" />
-                        ) : (
-                            <Mic />
-                        )}
-                    </div>
+                    {inputMode === 'voice' && (
+                        <div className="bg-black/30 backdrop-blur-sm p-2 rounded-full text-white">
+                            {isRecording ? (
+                                <Mic className="text-red-500 animate-pulse" />
+                            ) : (
+                                <Mic />
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
           </div>
@@ -285,13 +302,28 @@ export function InterviewCard({
               </p>
           </div>
           
+          {inputMode === 'text' && (
+            <Textarea
+              placeholder="Type your answer here..."
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+              rows={5}
+              className="animate-fade-in"
+              disabled={isAnalyzing || isSpeaking}
+            />
+          )}
+
            <div className="flex flex-col sm:flex-row gap-2">
-             <Button onClick={handleSubmit} className="flex-grow w-full" disabled={isAnalyzing || isSpeaking || !transcript || permissions.camera !== true || permissions.mic !== true}>
+             <Button onClick={handleSubmit} className="flex-grow w-full" disabled={isAnalyzing || isSpeaking || !transcript || permissions.camera !== true || (inputMode === 'voice' && permissions.mic !== true)}>
                 {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isAnalyzing ? 'Analyzing Answer...' : 'Submit Answer'}
               </Button>
-              <Button variant="outline" onClick={onSkip} className="w-full sm:w-auto" disabled={isAnalyzing || isSpeaking || permissions.camera !== true || permissions.mic !== true}>
+              <Button variant="outline" onClick={onSkip} className="w-full sm:w-auto" disabled={isAnalyzing || isSpeaking || permissions.camera !== true || (inputMode === 'voice' && permissions.mic !== true)}>
                   Skip Question
+              </Button>
+              <Button variant="outline" onClick={handleToggleInputMode} className="w-full sm:w-auto" disabled={isAnalyzing || isSpeaking}>
+                {inputMode === 'voice' ? <Type className="mr-2"/> : <Mic className="mr-2"/>}
+                Switch to {inputMode === 'voice' ? 'Text' : 'Voice'}
               </Button>
           </div>
 
@@ -300,5 +332,3 @@ export function InterviewCard({
     </div>
   );
 }
-
-    
