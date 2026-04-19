@@ -1,7 +1,13 @@
-import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+/**
+ * Genkit initialization is currently disabled to prevent build errors and remove Gemini API dependency.
+ */
 
-export const ai = genkit({
-  plugins: [googleAI()],
-  model: 'googleai/gemini-2.0-flash',
-});
+// import {genkit} from 'genkit';
+// import {googleAI} from '@genkit-ai/googleai';
+
+export const ai = {
+  // Mocking the ai object to satisfy any remaining references if they exist
+  generateStream: async () => ({ stream: null }),
+  definePrompt: (config: any) => () => ({ output: null }),
+  defineFlow: (config: any, fn: any) => fn,
+};
