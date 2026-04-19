@@ -285,6 +285,21 @@ export function InterviewCard({
                 AVA: {isSpeaking ? <span className="animate-pulse">...</span> : question}
               </p>
           </div>
+
+          {(transcript || isRecording) && (
+            <div className={`p-4 rounded-lg border-2 border-dashed transition-all ${isRecording ? 'border-primary bg-primary/5 animate-in fade-in slide-in-from-bottom-2' : 'border-muted bg-muted/30'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <Mic className={`h-4 w-4 ${isRecording ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Live Transcription
+                </span>
+                {isRecording && <span className="flex h-2 w-2 rounded-full bg-primary animate-ping" />}
+              </div>
+              <p className={`text-sm md:text-base min-h-[1.5rem] ${!transcript ? 'text-muted-foreground italic' : 'text-foreground font-medium'}`}>
+                {transcript || (isRecording ? "Listening..." : "")}
+              </p>
+            </div>
+          )}
           
            <div className="flex flex-col sm:flex-row gap-2">
              <Button onClick={handleSubmit} className="flex-grow w-full" disabled={isAnalyzing || isSpeaking || !transcript}>

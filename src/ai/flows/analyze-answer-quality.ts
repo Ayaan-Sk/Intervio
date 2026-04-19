@@ -8,8 +8,7 @@
  * - AnalyzeAnswerQualityOutput - Output type for the analyzeAnswerQuality function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const AnalyzeAnswerQualityInputSchema = z.object({
   question: z.string().describe('The interview question asked by the AI.'),
@@ -26,33 +25,37 @@ const AnalyzeAnswerQualityOutputSchema = z.object({
 export type AnalyzeAnswerQualityOutput = z.infer<typeof AnalyzeAnswerQualityOutputSchema>;
 
 export async function analyzeAnswerQuality(input: AnalyzeAnswerQualityInput): Promise<AnalyzeAnswerQualityOutput> {
-  return analyzeAnswerQualityFlow(input);
-}
+  // Simulate AI processing delay
+  await new Promise(resolve => setTimeout(resolve, 1500));
 
-const analyzeAnswerQualityPrompt = ai.definePrompt({
-  name: 'analyzeAnswerQualityPrompt',
-  input: {schema: AnalyzeAnswerQualityInputSchema},
-  output: {schema: AnalyzeAnswerQualityOutputSchema},
-  prompt: `You are an expert interview analyst. Analyze the candidate's answer to the following question.
+  const { question, answer } = input;
+  const wordCount = answer.split(/\s+/).length;
 
-Question: {{{question}}}
-Answer: {{{answer}}}
+  // Simple heuristics for dummy feedback
+  let qualityRating = 3;
+  let sentiment = 'neutral';
+  let justification = "Your answer provides a basic overview of the topic. To improve, try to include more specific examples from your past projects or technical depth regarding the underlying mechanics.";
 
-Determine the sentiment of the answer, rate the quality of the answer on a scale of 1 to 5 (where 5 is excellent), and extract the key talking points.
-Then, provide a detailed, conversational justification for this analysis. Explain why you gave the rating you did, referencing the talking points and the candidate's answer. Speak directly to the candidate.
-
-Output in JSON format:
-${JSON.stringify(AnalyzeAnswerQualityOutputSchema.shape, null, 2)}`,
-});
-
-const analyzeAnswerQualityFlow = ai.defineFlow(
-  {
-    name: 'analyzeAnswerQualityFlow',
-    inputSchema: AnalyzeAnswerQualityInputSchema,
-    outputSchema: AnalyzeAnswerQualityOutputSchema,
-  },
-  async input => {
-    const {output} = await analyzeAnswerQualityPrompt(input);
-    return output!;
+  if (wordCount > 50) {
+    qualityRating = 5;
+    sentiment = 'positive';
+    justification = "Excellent and detailed response! You've demonstrated a deep understanding of the subject matter, clearly explaining both the 'what' and the 'why'. Your use of structured explanations makes it very easy to follow.";
+  } else if (wordCount > 20) {
+    qualityRating = 4;
+    sentiment = 'positive';
+    justification = "Good answer. You've covered the main points effectively. Integrating more industry-standard terminology or briefly mentioning alternative approaches could push this to an expert level.";
   }
-);
+
+  const talkingPoints = [
+    "Clear communication style",
+    "Conceptual accuracy",
+    wordCount > 30 ? "Good depth of detail" : "Concise response"
+  ];
+
+  return {
+    sentiment,
+    qualityRating,
+    talkingPoints,
+    justification
+  };
+}

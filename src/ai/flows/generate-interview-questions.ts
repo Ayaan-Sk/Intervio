@@ -8,8 +8,7 @@
  * - GenerateInterviewQuestionsOutput - Output type for the function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const GenerateInterviewQuestionsInputSchema = z.object({
   topics: z.array(z.string()).describe('A list of technical topics for the interview.'),
@@ -806,41 +805,39 @@ const QUESTION_BANK = {
 };
 
 export async function generateInterviewQuestions(input: GenerateInterviewQuestionsInput): Promise<GenerateInterviewQuestionsOutput> {
-  return generateInterviewQuestionsFlow(input);
-}
+  const { topics } = input;
+  let questionPool: string[] = [];
 
-const generateInterviewQuestionsFlow = ai.defineFlow(
-  {
-    name: 'generateInterviewQuestionsFlow',
-    inputSchema: GenerateInterviewQuestionsInputSchema,
-    outputSchema: GenerateInterviewQuestionsOutputSchema,
-  },
-  async ({ topics }) => {
-    let questionPool: string[] = [];
-
-    if (topics.length > 0) {
-      topics.forEach(topic => {
-        const questionsForTopic = QUESTION_BANK[topic as keyof typeof QUESTION_BANK];
-        if (questionsForTopic) {
-          questionPool.push(...questionsForTopic);
-        }
-      });
-    }
-
-    // Use a Set to remove duplicate questions if a user selects topics with overlapping questions
-    const uniqueQuestions = Array.from(new Set(questionPool));
-
-    // Handle case where no questions were found for selected topics
-    if (uniqueQuestions.length === 0) {
-      return { questions: ["Tell me about a challenging technical problem you solved recently.", "Describe your experience with version control systems like Git.", "How do you approach learning a new technology?"] };
-    }
-
-    // Shuffle the pool to ensure randomness
-    const shuffledQuestions = uniqueQuestions.sort(() => 0.5 - Math.random());
-
-    // Select up to 15 questions
-    const selectedQuestions = shuffledQuestions.slice(0, 15);
-
-    return { questions: selectedQuestions };
+  if (topics.length > 0) {
+    topics.forEach(topic => {
+      const questionsForTopic = QUESTION_BANK[topic as keyof typeof QUESTION_BANK];
+      if (questionsForTopic) {
+        questionPool.push(...questionsForTopic);
+      }
+    });
   }
-);
+
+  // Use a Set to remove duplicate questions
+  const uniqueQuestions = Array.from(new Set(questionPool));
+
+  // Handle case where no questions were found
+  if (uniqueQuestions.length === 0) {
+    return { 
+      questions: [
+        "Tell me about a challenging technical problem you solved recently.", 
+        "Describe your experience with version control systems like Git.", 
+        "How do you approach learning a new technology?",
+        "What is your preferred development environment and why?",
+        "Explain the importance of code reviews in a team setting."
+      ] 
+    };
+  }
+
+  // Shuffle the pool
+  const shuffledQuestions = uniqueQuestions.sort(() => 0.5 - Math.random());
+
+  // Select EXACTLY 5 questions for a fixed experience
+  const selectedQuestions = shuffledQuestions.slice(0, 5);
+
+  return { questions: selectedQuestions };
+}
