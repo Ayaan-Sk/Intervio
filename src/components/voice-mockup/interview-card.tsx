@@ -11,6 +11,17 @@ import type { InterviewVoice } from './voice-mockup-app';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
+// Add types for Web Speech API
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
+type SpeechRecognition = any;
+type SpeechRecognitionErrorEvent = any;
+
 interface InterviewCardProps {
   question: string;
   topics: string[];
@@ -127,7 +138,7 @@ export function InterviewCard({
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: any) => {
       let interimTranscript = '';
       let finalTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
