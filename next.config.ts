@@ -8,12 +8,8 @@ const nextConfig = {
       },
     ],
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // TypeScript and ESLint configuration has moved in Next.js 16+
+  // If needed, they should be configured in their respective config files.
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
