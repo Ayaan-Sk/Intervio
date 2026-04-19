@@ -5,12 +5,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bot, FileText, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function AppHome({
+export default async function AppHome({
   searchParams,
 }: {
-  searchParams: { tab?: string };
+  searchParams: Promise<{ tab?: string }>;
 }) {
-  const defaultTab = searchParams?.tab === 'resume' ? 'resume' : 'interview';
+  const { tab } = await searchParams;
+  const defaultTab = tab === 'resume' ? 'resume' : 'interview';
 
   return (
     <div className="flex flex-col min-h-screen bg-secondary">
